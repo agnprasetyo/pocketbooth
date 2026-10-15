@@ -1,11 +1,32 @@
-/* Global CSS reset / base */
-*, *::before, *::after {
-  box-sizing: border-box;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Filter styles for photos and camera */
+  .filter-normal {
+    filter: none;
+  }
+  .filter-bw {
+    filter: grayscale(100%) contrast(125%) brightness(105%);
+  }
+  .filter-vintage {
+    filter: sepia(35%) contrast(108%) brightness(95%) saturate(115%);
+  }
+  .filter-soft {
+    filter: contrast(95%) brightness(108%) saturate(90%);
+  }
+  .filter-cool {
+    filter: hue-rotate(185deg) saturate(75%) contrast(110%) brightness(102%);
+  }
+  .filter-film {
+    filter: contrast(115%) saturate(85%) brightness(100%) sepia(15%);
+  }
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f7f6f2;
+  color: #1c1917;
+  overflow-x: hidden;
 }

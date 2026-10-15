@@ -1,12 +1,12 @@
 import { openDB } from 'idb';
 
-const DB_NAME = 'mylink-photos';
+const DB_NAME = 'pocketbooth-db';
 const STORE_NAME = 'photos';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function getDB() {
   return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
+    upgrade(db, oldVersion) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME);
       }
@@ -24,10 +24,10 @@ export async function getPhoto(slot) {
   return db.get(STORE_NAME, `slot-${slot}`);
 }
 
-export async function getAllPhotos() {
+export async function getAllPhotos(maxSlots = 4) {
   const db = await getDB();
   const photos = {};
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < maxSlots; i++) {
     const val = await db.get(STORE_NAME, `slot-${i}`);
     if (val) photos[i] = val;
   }
