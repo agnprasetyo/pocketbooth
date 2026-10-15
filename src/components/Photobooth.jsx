@@ -929,28 +929,17 @@ export default function Photobooth() {
   return (
     <div className="min-h-screen bg-[#f5ede2] text-zinc-900 pb-20 relative overflow-hidden selection:bg-rose-200">
 
-      {/* ── Background Organic Decorations ── */}
+      {/* ── Background Subtle Ambient Gradient ── */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           backgroundImage: `
-            radial-gradient(ellipse at 20% 10%, rgba(224,200,180,0.55) 0%, transparent 55%),
-            radial-gradient(ellipse at 80% 85%, rgba(181,201,168,0.35) 0%, transparent 55%),
-            radial-gradient(ellipse at 55% 50%, rgba(240,215,200,0.2) 0%, transparent 70%)
+            radial-gradient(ellipse at 20% 10%, rgba(224,200,180,0.45) 0%, transparent 55%),
+            radial-gradient(ellipse at 80% 85%, rgba(181,201,168,0.25) 0%, transparent 55%),
+            radial-gradient(ellipse at 55% 50%, rgba(240,215,200,0.15) 0%, transparent 70%)
           `,
         }}
       />
-
-      {/* Floating Blobs */}
-      <div className="deco-blob deco-blob--1" />
-      <div className="deco-blob deco-blob--2" />
-      <div className="deco-blob deco-blob--3" />
-
-      {/* Floating Leaves & Flowers (Exact SVGs requested) */}
-      <Leaf className="deco deco-leaf deco-leaf--tl" />
-      <Leaf className="deco deco-leaf deco-leaf--br" />
-      <Flower className="deco deco-flower deco-flower--tr" />
-      <Flower className="deco deco-flower deco-flower--bl" />
 
       {/* Toast Notification */}
       {toastMessage && (
