@@ -1,0 +1,208 @@
+/* ════════════════════════════════════════════
+   App.css — Global layout & aesthetic styles
+   ════════════════════════════════════════════ */
+
+/* ─── Reset ──────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Page background ─────────────────────── */
+.page-bg {
+  font-family: 'Nunito', sans-serif;
+  min-height: 100vh;
+  background-color: #f5ede2;
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(224,200,180,0.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 85%, rgba(181,201,168,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 55% 50%, rgba(240,215,200,0.2) 0%, transparent 70%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 30px 16px 50px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Floating blobs ─────────────────────── */
+.deco-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+.deco-blob--1 {
+  width: 280px; height: 280px;
+  background: rgba(224, 185, 162, 0.35);
+  top: -60px; right: -60px;
+  animation: blobFloat 8s ease-in-out infinite alternate;
+}
+.deco-blob--2 {
+  width: 220px; height: 220px;
+  background: rgba(181, 201, 168, 0.3);
+  bottom: 40px; left: -70px;
+  animation: blobFloat 10s ease-in-out infinite alternate-reverse;
+}
+.deco-blob--3 {
+  width: 160px; height: 160px;
+  background: rgba(240, 168, 150, 0.25);
+  top: 50%; left: 50%;
+  animation: blobFloat 7s ease-in-out infinite alternate;
+}
+
+@keyframes blobFloat {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(20px, 20px) scale(1.08); }
+}
+
+/* ─── Decorative SVGs ────────────────────── */
+.deco {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Leaves */
+.deco-leaf { color: #b5c9a8; }
+.deco-leaf--tl {
+  width: 90px;
+  top: -20px; left: -15px;
+  transform: rotate(20deg);
+  animation: leafSway 6s ease-in-out infinite alternate;
+}
+.deco-leaf--br {
+  width: 80px;
+  bottom: -10px; right: -10px;
+  transform: rotate(-160deg);
+  animation: leafSway 8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes leafSway {
+  from { transform: rotate(20deg); }
+  to   { transform: rotate(26deg); }
+}
+
+/* Flowers */
+.deco-flower { color: #e8b4a0; }
+.deco-flower--tr {
+  width: 70px;
+  top: 60px; right: 10px;
+  animation: flowerSpin 20s linear infinite;
+}
+.deco-flower--bl {
+  width: 55px;
+  bottom: 80px; left: 10px;
+  animation: flowerSpin 25s linear infinite reverse;
+}
+
+@keyframes flowerSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── Main card ──────────────────────────── */
+.card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 250, 245, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 30px;
+  padding: 32px 24px 36px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow:
+    0 20px 60px rgba(180,140,120,0.18),
+    0 4px 16px rgba(0,0,0,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  border: 1px solid rgba(220,195,175,0.4);
+  animation: cardFloat 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes cardFloat {
+  from { opacity: 0; transform: translateY(30px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Sections ───────────────────────────── */
+.section-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ─── Camera icon ────────────────────────── */
+.camera-icon {
+  background: rgba(181,201,168,0.2);
+  border-radius: 50%;
+  width: 54px; height: 54px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 12px rgba(155,184,154,0.25);
+}
+
+/* ─── Section heading ─────────────────────── */
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-heading__text {
+  font-family: 'Dancing Script', cursive;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #5a4a42;
+  white-space: nowrap;
+}
+
+.heading-sparkle {
+  width: 16px; height: 16px;
+  color: #d4a94a;
+  flex-shrink: 0;
+}
+
+.heading-sparkle--left  { animation: sparklePulse 2s ease-in-out infinite; }
+.heading-sparkle--right { animation: sparklePulse 2s ease-in-out infinite 0.5s; }
+
+@keyframes sparklePulse {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+  50%       { transform: scale(1.3) rotate(15deg); opacity: 1; }
+}
+
+/* ─── Divider ────────────────────────────── */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 240px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d4c5b5, transparent);
+}
+
+.divider-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #d4a94a;
+  opacity: 0.6;
+}
+
+/* ─── Wave divider between sections ──────── */
+.wave-divider {
+  width: 100%;
+  margin: 8px 0;
+  overflow: hidden;
+}
+.wave-divider svg {
+  width: 100%;
+  height: 20px;
+  display: block;
+}
