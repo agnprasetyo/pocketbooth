@@ -297,11 +297,20 @@ function ThemeStripOrnaments({ type, text, border }) {
   return null;
 }
 
-// ── PAKET TEMPLATE (Presets - Clean, Vintage/Retro, & Modern/Futuristic) ──
+// ── PAKET TEMPLATE CATEGORIES ──
+const THEME_CATEGORIES = [
+  { id: 'all', label: 'Semua Tema' },
+  { id: 'korean', label: 'Korean / Aesthetic' },
+  { id: 'vintage', label: 'Vintage / Retro' },
+  { id: 'modern', label: 'Modern / Futuristic' },
+];
+
+// ── PAKET TEMPLATE (Presets - Korean/Aesthetic, Vintage/Retro, & Modern/Futuristic) ──
 const TEMPLATE_PACKAGES = [
-  // 1. Botanical
+  // ── KOREAN / AESTHETIC ──
   {
     id: 'botanical',
+    category: 'korean',
     name: 'Matcha Botanical',
     subtitle: 'Aesthetic Earthy & Washi',
     badge: '🌿 Natural',
@@ -317,117 +326,9 @@ const TEMPLATE_PACKAGES = [
     defaultSubtext: 'SELF PHOTO STUDIO',
     defaultSticker: 'heart',
   },
-  // 2. Vintage 70s
-  {
-    id: 'retro-70s',
-    name: 'Retro 70s Analog',
-    subtitle: 'Warm Amber & Cassette Tape',
-    badge: '📻 70s Retro',
-    bg: '#fef3c7',
-    text: '#78350f',
-    subtext: '#92400e',
-    border: '#f59e0b',
-    accent: '#fffbeb',
-    washi: 'retro',
-    ornament: 'retro70s',
-    defaultFilter: 'retro70s',
-    defaultTitle: 'RETRO 1978',
-    defaultSubtext: 'ANALOG CASSETTE TAPE',
-    defaultSticker: 'sparkle',
-  },
-  // 3. Vintage Polaroid
-  {
-    id: 'polaroid',
-    name: 'Vintage Polaroid',
-    subtitle: 'Classic Cream Paper Film',
-    badge: '🎞️ Polaroid',
-    bg: '#faf7f2',
-    text: '#3f3f46',
-    subtext: '#71717a',
-    border: '#e4e4e7',
-    accent: '#f4f4f5',
-    washi: 'kraft',
-    ornament: 'polaroid',
-    defaultFilter: 'vintage',
-    defaultTitle: 'POLAROID 90s',
-    defaultSubtext: 'ORIGINAL INSTANT PRINT',
-    defaultSticker: 'camera',
-  },
-  // 4. 35mm Film Roll
-  {
-    id: 'film-roll',
-    name: '35mm Film Roll',
-    subtitle: 'Dark Sepia Film Negative',
-    badge: '📷 Film Roll',
-    bg: '#2b211b',
-    text: '#fef3c7',
-    subtext: '#d97706',
-    border: '#45352c',
-    accent: '#382b23',
-    washi: 'kraft',
-    ornament: 'filmroll',
-    defaultFilter: 'film',
-    defaultTitle: 'KODAK 400',
-    defaultSubtext: '35MM ANALOG NEGATIVE',
-    defaultSticker: 'film',
-  },
-  // 5. Cyber Neon 2077 (Futuristic)
-  {
-    id: 'cyberpunk',
-    name: 'Cyber Neon 2077',
-    subtitle: 'Obsidian & Electric Cyan',
-    badge: '⚡ Cyberpunk',
-    bg: '#09090b',
-    text: '#22d3ee',
-    subtext: '#a855f7',
-    border: '#06b6d4',
-    accent: '#18181b',
-    washi: 'cyber',
-    ornament: 'cyber',
-    defaultFilter: 'cyber',
-    defaultTitle: 'CYBER//2077',
-    defaultSubtext: 'SYS.GRID • NEON MATRIX',
-    defaultSticker: 'star',
-  },
-  // 6. Silver Titanium (Modern Chrome)
-  {
-    id: 'silver-chrome',
-    name: 'Silver Titanium',
-    subtitle: 'Futuristic Metallic Chrome',
-    badge: '💿 Chrome',
-    bg: '#e2e8f0',
-    text: '#0f172a',
-    subtext: '#475569',
-    border: '#cbd5e1',
-    accent: '#f1f5f9',
-    washi: 'chrome',
-    ornament: 'tech',
-    defaultFilter: 'silver',
-    defaultTitle: 'TITANIUM LAB',
-    defaultSubtext: 'MODERN TECH SPEC.01',
-    defaultSticker: 'sparkle',
-  },
-  // 7. Classic Noir
-  {
-    id: 'classic-noir',
-    name: 'Classic Noir',
-    subtitle: 'High-Contrast Studio B&W',
-    badge: '🖤 Noir',
-    bg: '#18181b',
-    text: '#fafafa',
-    subtext: '#a1a1aa',
-    border: '#27272a',
-    accent: '#27272a',
-    washi: 'striped',
-    ornament: 'minimal',
-    defaultFilter: 'bw',
-    defaultTitle: 'CLASSIC NOIR',
-    defaultSubtext: 'MONOCHROME STUDIO',
-    defaultSticker: 'film',
-  },
-  // 8. Sky Minimalist
   {
     id: 'sky-minimal',
+    category: 'korean',
     name: 'Sky Blue Pastel',
     subtitle: 'Clean Pastel Sky & Clouds',
     badge: '☁️ Sky Blue',
@@ -443,9 +344,9 @@ const TEMPLATE_PACKAGES = [
     defaultSubtext: 'PHOTOBOOTH MEMORY',
     defaultSticker: 'star',
   },
-  // 9. Cherry Pop
   {
     id: 'cherry',
+    category: 'korean',
     name: 'Cherry Pop Y2K',
     subtitle: 'Sweet Berry Pink & Hearts',
     badge: '🍒 Sweet',
@@ -461,9 +362,27 @@ const TEMPLATE_PACKAGES = [
     defaultSubtext: 'SWEETEST MOMENTS',
     defaultSticker: 'cherry',
   },
-  // 10. Snow White Studio
+  {
+    id: 'lilac-dream',
+    category: 'korean',
+    name: 'Lilac Dream',
+    subtitle: 'Soft Purple Pastel & Bow',
+    badge: '🎀 Dreamy',
+    bg: '#f3e8ff',
+    text: '#581c87',
+    subtext: '#7e22ce',
+    border: '#e9d5ff',
+    accent: '#faf5ff',
+    washi: 'grid',
+    ornament: 'botanical',
+    defaultFilter: 'soft',
+    defaultTitle: 'LILAC DREAM',
+    defaultSubtext: 'SELF PHOTO STUDIO',
+    defaultSticker: 'ribbon',
+  },
   {
     id: 'minimal-white',
+    category: 'korean',
     name: 'Snow White',
     subtitle: 'Clean Minimal Gallery White',
     badge: '✨ Minimal',
@@ -478,6 +397,154 @@ const TEMPLATE_PACKAGES = [
     defaultTitle: 'POCKETBOOTH',
     defaultSubtext: 'INSTANT PHOTO STUDIO',
     defaultSticker: 'none',
+  },
+
+  // ── VINTAGE / RETRO ──
+  {
+    id: 'retro-70s',
+    category: 'vintage',
+    name: 'Retro 70s Analog',
+    subtitle: 'Warm Amber & Cassette Tape',
+    badge: '📻 70s Retro',
+    bg: '#fef3c7',
+    text: '#78350f',
+    subtext: '#92400e',
+    border: '#f59e0b',
+    accent: '#fffbeb',
+    washi: 'retro',
+    ornament: 'retro70s',
+    defaultFilter: 'retro70s',
+    defaultTitle: 'RETRO 1978',
+    defaultSubtext: 'ANALOG CASSETTE TAPE',
+    defaultSticker: 'sparkle',
+  },
+  {
+    id: 'polaroid',
+    category: 'vintage',
+    name: 'Vintage Polaroid',
+    subtitle: 'Classic Cream Paper Film',
+    badge: '🎞️ Polaroid',
+    bg: '#faf7f2',
+    text: '#3f3f46',
+    subtext: '#71717a',
+    border: '#e4e4e7',
+    accent: '#f4f4f5',
+    washi: 'kraft',
+    ornament: 'polaroid',
+    defaultFilter: 'vintage',
+    defaultTitle: 'POLAROID 90s',
+    defaultSubtext: 'ORIGINAL INSTANT PRINT',
+    defaultSticker: 'camera',
+  },
+  {
+    id: 'film-roll',
+    category: 'vintage',
+    name: '35mm Film Roll',
+    subtitle: 'Dark Sepia Film Negative',
+    badge: '📷 Film Roll',
+    bg: '#2b211b',
+    text: '#fef3c7',
+    subtext: '#d97706',
+    border: '#45352c',
+    accent: '#382b23',
+    washi: 'kraft',
+    ornament: 'filmroll',
+    defaultFilter: 'film',
+    defaultTitle: 'KODAK 400',
+    defaultSubtext: '35MM ANALOG NEGATIVE',
+    defaultSticker: 'film',
+  },
+  {
+    id: 'sepia-classic',
+    category: 'vintage',
+    name: 'Sepia Nostalgia',
+    subtitle: 'Warm Aged Vintage Tone',
+    badge: '⏳ 1920s',
+    bg: '#f5ede0',
+    text: '#543d2b',
+    subtext: '#7c5e45',
+    border: '#d7c4b0',
+    accent: '#faf5ed',
+    washi: 'kraft',
+    ornament: 'polaroid',
+    defaultFilter: 'vintage',
+    defaultTitle: 'NOSTALGIA',
+    defaultSubtext: 'ANTIQUE PHOTOBOOTH',
+    defaultSticker: 'sparkle',
+  },
+
+  // ── MODERN / FUTURISTIC ──
+  {
+    id: 'cyberpunk',
+    category: 'modern',
+    name: 'Cyber Neon 2077',
+    subtitle: 'Obsidian & Electric Cyan',
+    badge: '⚡ Cyberpunk',
+    bg: '#09090b',
+    text: '#22d3ee',
+    subtext: '#a855f7',
+    border: '#06b6d4',
+    accent: '#18181b',
+    washi: 'cyber',
+    ornament: 'cyber',
+    defaultFilter: 'cyber',
+    defaultTitle: 'CYBER//2077',
+    defaultSubtext: 'SYS.GRID • NEON MATRIX',
+    defaultSticker: 'star',
+  },
+  {
+    id: 'silver-chrome',
+    category: 'modern',
+    name: 'Silver Titanium',
+    subtitle: 'Futuristic Metallic Chrome',
+    badge: '💿 Chrome',
+    bg: '#e2e8f0',
+    text: '#0f172a',
+    subtext: '#475569',
+    border: '#cbd5e1',
+    accent: '#f1f5f9',
+    washi: 'chrome',
+    ornament: 'tech',
+    defaultFilter: 'silver',
+    defaultTitle: 'TITANIUM LAB',
+    defaultSubtext: 'MODERN TECH SPEC.01',
+    defaultSticker: 'sparkle',
+  },
+  {
+    id: 'classic-noir',
+    category: 'modern',
+    name: 'Classic Noir',
+    subtitle: 'High-Contrast Studio B&W',
+    badge: '🖤 Noir',
+    bg: '#18181b',
+    text: '#fafafa',
+    subtext: '#a1a1aa',
+    border: '#27272a',
+    accent: '#27272a',
+    washi: 'striped',
+    ornament: 'minimal',
+    defaultFilter: 'bw',
+    defaultTitle: 'CLASSIC NOIR',
+    defaultSubtext: 'MONOCHROME STUDIO',
+    defaultSticker: 'film',
+  },
+  {
+    id: 'matrix-digital',
+    category: 'modern',
+    name: 'Matrix Digital',
+    subtitle: 'Deep Emerald & Cyber Code',
+    badge: '🟢 Matrix',
+    bg: '#022c22',
+    text: '#34d399',
+    subtext: '#059669',
+    border: '#10b981',
+    accent: '#064e3b',
+    washi: 'cyber',
+    ornament: 'cyber',
+    defaultFilter: 'cool',
+    defaultTitle: 'MATRIX//NODE',
+    defaultSubtext: 'DIGITAL STREAM CORE',
+    defaultSticker: 'star',
   },
 ];
 
@@ -514,7 +581,8 @@ const STICKERS = [
 ];
 
 export default function Photobooth() {
-  // Selected Template Package
+  // Selected Template Category & Package
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTemplate, setSelectedTemplate] = useState('botanical');
 
   // Customization States
@@ -939,21 +1007,37 @@ export default function Photobooth() {
 
         {/* ── PAKET TEMPLATE CAROUSEL SECTION ── */}
         <section className="mb-6 bg-white/75 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 shadow-sm">
-          <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 px-1">
             <div className="flex items-center gap-2">
               <Box className="w-4 h-4 text-emerald-700" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">PILIH PAKET TEMPLATE</h2>
             </div>
-            <span className="text-[11px] text-zinc-500 font-mono">Vintage, Retro, Modern & Futuristic</span>
+
+            {/* Category Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              {THEME_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition flex-shrink-0 ${
+                    selectedCategory === cat.id
+                      ? 'bg-zinc-900 text-white shadow-xs'
+                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Template Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
-            {TEMPLATE_PACKAGES.map((pkg) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+            {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).map((pkg) => (
               <button
                 key={pkg.id}
                 onClick={() => applyTemplate(pkg)}
-                className={`p-2 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group ${
+                className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group ${
                   selectedTemplate === pkg.id
                     ? 'border-zinc-800 ring-2 ring-zinc-800/15 shadow-md bg-white'
                     : 'border-zinc-200/80 bg-white/60 hover:bg-white text-zinc-700 hover:shadow-xs'
@@ -966,14 +1050,14 @@ export default function Photobooth() {
                   >
                     {selectedTemplate === pkg.id && <Check className="w-3 h-3 text-white drop-shadow-xs" />}
                   </span>
-                  <span className="text-[8px] font-bold px-1 py-0.5 rounded-full bg-zinc-100 text-zinc-700 truncate max-w-[50px]">
-                    {pkg.badge.split(' ')[0]}
+                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 truncate max-w-[70px]">
+                    {pkg.badge}
                   </span>
                 </div>
 
                 <div>
-                  <p className="font-bold text-[11px] text-zinc-900 leading-tight truncate">{pkg.name}</p>
-                  <p className="text-[9px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
+                  <p className="font-bold text-xs text-zinc-900 leading-tight truncate">{pkg.name}</p>
+                  <p className="text-[10px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
                 </div>
               </button>
             ))}
