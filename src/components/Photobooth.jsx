@@ -13,35 +13,241 @@ import {
   Palette,
   LayoutGrid,
   Check,
-  ChevronRight,
   Sliders,
-  Image as ImageIcon,
-  Flame,
   Zap,
+  Box,
+  Heart,
+  Star,
+  Film,
 } from 'lucide-react';
 import { savePhoto, getAllPhotos, deletePhoto, clearAllPhotos } from '../db/photoDb';
 import { playCountdownBeep, playShutterSound } from '../utils/audio';
 
-// Layout Configurations
+// ── Background Ambient SVGs ──
+const Leaf = ({ className }) => (
+  <svg className={className} viewBox="0 0 80 120" xmlns="http://www.w3.org/2000/svg">
+    <path d="M40 0 C10 30, 0 60, 10 90 C20 110, 40 120, 40 120 C40 120, 60 110, 70 90 C80 60, 70 30, 40 0Z" fill="currentColor" opacity="0.6"/>
+    <line x1="40" y1="10" x2="40" y2="115" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/>
+    <line x1="40" y1="40" x2="22" y2="60" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+    <line x1="40" y1="55" x2="58" y2="70" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+    <line x1="40" y1="70" x2="20" y2="85" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+  </svg>
+);
+
+const Flower = ({ className }) => (
+  <svg className={className} viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    {[0, 60, 120, 180, 240, 300].map((rot, i) => (
+      <ellipse key={i} cx="30" cy="12" rx="8" ry="14" fill="currentColor" opacity="0.6"
+        transform={`rotate(${rot} 30 30)`} />
+    ))}
+    <circle cx="30" cy="30" r="9" fill="#f5d06a" opacity="0.85" />
+    <circle cx="30" cy="30" r="5" fill="#f0c040" />
+  </svg>
+);
+
+// ── Photostrip Decorative SVGs ──
+const LeafStem1 = () => (
+  <svg className="w-8 h-16 drop-shadow-xs" viewBox="0 0 40 80" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10,75 Q20,40 15,10" fill="none" stroke="#5d7255" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M15,10 Q5,8 8,2 C12,-2 18,5 15,10 Z" fill="#788e6e" />
+    <path d="M17,25 Q7,20 10,14 C14,8 20,17 17,25 Z" fill="#788e6e" />
+    <path d="M15,40 Q5,35 8,29 C12,23 18,32 15,40 Z" fill="#788e6e" />
+    <path d="M14,55 Q4,50 7,44 C11,38 17,47 14,55 Z" fill="#788e6e" />
+    <path d="M18,18 Q28,15 25,9 C21,3 15,12 18,18 Z" fill="#788e6e" />
+    <path d="M16,33 Q26,30 23,24 C19,18 13,27 16,33 Z" fill="#788e6e" />
+    <path d="M15,48 Q25,45 22,39 C18,33 12,42 15,48 Z" fill="#788e6e" />
+    <path d="M13,63 Q23,60 20,54 C16,48 10,57 13,63 Z" fill="#788e6e" />
+  </svg>
+);
+
+const LeafStem2 = () => (
+  <svg className="w-9 h-7 drop-shadow-xs" viewBox="0 0 50 40" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5,35 Q25,25 45,5" fill="none" stroke="#5d7255" strokeWidth="2" strokeLinecap="round" />
+    <path d="M45,5 Q40,15 35,12 C30,9 38,0 45,5 Z" fill="#8aa380" />
+    <path d="M30,17 Q23,24 20,20 C17,16 26,10 30,17 Z" fill="#8aa380" />
+    <path d="M18,25 Q11,32 8,28 C5,24 14,18 18,25 Z" fill="#8aa380" />
+    <path d="M36,12 Q42,22 45,18 C48,14 39,8 36,12 Z" fill="#8aa380" />
+    <path d="M24,21 Q30,31 33,27 C36,23 27,17 24,21 Z" fill="#8aa380" />
+  </svg>
+);
+
+const HeartHandDrawn = ({ color = "#5d7255", width = 18, height = 18 }) => (
+  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 20 C9 18 3 13 3 8.5 C3 5.5 5.5 3 8.5 3 C10.5 3 11.5 4 12 5 C12.5 4 13.5 3 15.5 3 C18.5 3 21 5.5 21 8.5 C21 13 15 18 12 20 Z"
+      stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// Washi Tape Component
+const WashiTape = ({ type = 'grid' }) => {
+  if (type === 'none') return null;
+
+  let patternStyle = {};
+  let extraClass = 'bg-white/70 border-white/50';
+
+  if (type === 'grid') {
+    extraClass = 'bg-white/80 border-white/60';
+    patternStyle = {
+      backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px)',
+      backgroundSize: '5px 5px',
+    };
+  } else if (type === 'striped') {
+    extraClass = 'bg-white/75';
+    patternStyle = {
+      backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.7), rgba(255,255,255,0.7) 3px, transparent 3px, transparent 7px)',
+    };
+  } else if (type === 'polka') {
+    extraClass = 'bg-rose-200/80';
+    patternStyle = {
+      backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.85) 1.5px, transparent 1.5px)',
+      backgroundSize: '6px 6px',
+    };
+  } else if (type === 'kraft') {
+    extraClass = 'bg-[#dfbe9f]/90 border-[#c49f7e]/50';
+  }
+
+  return (
+    <div
+      className={`absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-3.5 z-20 backdrop-blur-xs shadow-xs border ${extraClass} transform -rotate-1`}
+      style={{
+        ...patternStyle,
+        clipPath: 'polygon(2% 0%, 98% 0%, 100% 100%, 0% 100%)',
+      }}
+    />
+  );
+};
+
+// ── PAKET TEMPLATE (Presets) ──
+const TEMPLATE_PACKAGES = [
+  {
+    id: 'botanical',
+    name: 'Matcha Botanical',
+    subtitle: 'Aesthetic Earthy & Washi',
+    badge: '🌿 Popular',
+    bg: '#9fb8ad',
+    text: '#2d4234',
+    subtext: '#44614e',
+    border: '#87a294',
+    accent: '#b2c8bd',
+    washi: 'grid',
+    ornament: 'botanical',
+    defaultFilter: 'soft',
+    defaultTitle: 'BOTANICAL MEMORY',
+    defaultSubtext: 'POCKETBOOTH STUDIO',
+    defaultSticker: 'heart',
+  },
+  {
+    id: 'haru',
+    name: 'Haru Sky (하루필름)',
+    subtitle: 'Signature Korean Sky Blue',
+    badge: '☁️ Iconic',
+    bg: '#e0f2fe',
+    text: '#0369a1',
+    subtext: '#0284c7',
+    border: '#bae6fd',
+    accent: '#f0f9ff',
+    washi: 'striped',
+    ornament: 'haru',
+    defaultFilter: 'cool',
+    defaultTitle: 'HARU FILM',
+    defaultSubtext: 'LIFE 4 CUTS • 하루',
+    defaultSticker: 'star',
+  },
+  {
+    id: 'life4cuts',
+    name: 'Life4Cuts Classic',
+    subtitle: '인생네컷 Minimal Noir',
+    badge: '🖤 Classic',
+    bg: '#18181b',
+    text: '#fafafa',
+    subtext: '#a1a1aa',
+    border: '#27272a',
+    accent: '#27272a',
+    washi: 'striped',
+    ornament: 'minimal',
+    defaultFilter: 'bw',
+    defaultTitle: '인생네컷',
+    defaultSubtext: 'LIFE 4 CUTS STUDIO',
+    defaultSticker: 'film',
+  },
+  {
+    id: 'cherry',
+    name: 'Cherry Pop Y2K',
+    subtitle: 'Sweet Strawberry Pink',
+    badge: '🍒 Cute',
+    bg: '#fce7f3',
+    text: '#831843',
+    subtext: '#be185d',
+    border: '#fbcfe8',
+    accent: '#fff1f2',
+    washi: 'polka',
+    ornament: 'y2k',
+    defaultFilter: 'vintage',
+    defaultTitle: 'CHERRY POP ♡',
+    defaultSubtext: 'SWEETEST MOMENTS',
+    defaultSticker: 'cherry',
+  },
+  {
+    id: 'vintage',
+    name: 'Vintage 90s Film',
+    subtitle: 'Analog Kraft & Warm Paper',
+    badge: '🎞️ Retro',
+    bg: '#fef3c7',
+    text: '#78350f',
+    subtext: '#92400e',
+    border: '#fde68a',
+    accent: '#fffbeb',
+    washi: 'kraft',
+    ornament: 'vintage',
+    defaultFilter: 'film',
+    defaultTitle: "MEMORIES '98",
+    defaultSubtext: 'ANALOG PHOTOBOOTH',
+    defaultSticker: 'sparkle',
+  },
+  {
+    id: 'lilac',
+    name: 'Lilac Dream (라일락)',
+    subtitle: 'Soft Purple Pastel & Bow',
+    badge: '🎀 Dreamy',
+    bg: '#f3e8ff',
+    text: '#581c87',
+    subtext: '#7e22ce',
+    border: '#e9d5ff',
+    accent: '#faf5ff',
+    washi: 'grid',
+    ornament: 'lilac',
+    defaultFilter: 'soft',
+    defaultTitle: 'LILAC DREAM',
+    defaultSubtext: 'SELF PHOTO STUDIO',
+    defaultSticker: 'ribbon',
+  },
+  {
+    id: 'minimal-white',
+    name: 'Snow White',
+    subtitle: 'Clean Minimal Gallery White',
+    badge: '✨ Minimal',
+    bg: '#ffffff',
+    text: '#18181b',
+    subtext: '#71717a',
+    border: '#e4e4e7',
+    accent: '#f4f4f5',
+    washi: 'none',
+    ornament: 'none',
+    defaultFilter: 'normal',
+    defaultTitle: 'POCKETBOOTH',
+    defaultSubtext: 'PHOTO STUDIO',
+    defaultSticker: 'none',
+  },
+];
+
+// Layout Options
 const LAYOUTS = [
-  { id: 'strip-4', label: '4-Cuts', slots: 4, desc: 'Classic Korean 4-Cut vertical strip' },
-  { id: 'strip-3', label: '3-Cuts', slots: 3, desc: '3-Cut vertical strip' },
+  { id: 'strip-4', label: '4-Cuts Strip', slots: 4, desc: 'Classic vertical Korean photostrip' },
+  { id: 'strip-3', label: '3-Cuts Strip', slots: 3, desc: '3-photo vertical strip' },
   { id: 'grid-4', label: '2x2 Grid', slots: 4, desc: 'Photoism quad grid layout' },
 ];
 
-// Color Themes for Photostrip Frame
-const THEMES = [
-  { id: 'white', name: 'Snow White', bg: '#ffffff', text: '#18181b', subtext: '#71717a', border: '#e4e4e7', accent: '#f4f4f5' },
-  { id: 'black', name: 'Matte Charcoal', bg: '#18181b', text: '#fafafa', subtext: '#a1a1aa', border: '#27272a', accent: '#27272a' },
-  { id: 'butter', name: 'Cream Butter', bg: '#fef9c3', text: '#713f12', subtext: '#a16207', border: '#fef08a', accent: '#fef08a' },
-  { id: 'pink', name: 'Strawberry Milk', bg: '#fce7f3', text: '#831843', subtext: '#be185d', border: '#fbcfe8', accent: '#fbcfe8' },
-  { id: 'sky', name: 'Haru Sky', bg: '#e0f2fe', text: '#0369a1', subtext: '#0284c7', border: '#bae6fd', accent: '#bae6fd' },
-  { id: 'sage', name: 'Matcha Sage', bg: '#dcfce7', text: '#14532d', subtext: '#15803d', border: '#bbf7d0', accent: '#bbf7d0' },
-  { id: 'lavender', name: 'Lilac Dream', bg: '#f3e8ff', text: '#581c87', subtext: '#7e22ce', border: '#e9d5ff', accent: '#e9d5ff' },
-  { id: 'navy', name: 'Midnight Blue', bg: '#0f172a', text: '#f8fafc', subtext: '#94a3b8', border: '#1e293b', accent: '#1e293b' },
-];
-
-// Aesthetic Photo Filters
+// Filters
 const FILTERS = [
   { id: 'normal', name: 'Original', class: 'filter-normal', preview: 'bg-zinc-200' },
   { id: 'bw', name: 'Monochrome', class: 'filter-bw', preview: 'bg-zinc-800' },
@@ -51,7 +257,7 @@ const FILTERS = [
   { id: 'cool', name: 'Cool Tone', class: 'filter-cool', preview: 'bg-cyan-700' },
 ];
 
-// Decorative Korean Stickers/Icons
+// Stickers
 const STICKERS = [
   { id: 'none', label: 'None', symbol: '' },
   { id: 'heart', label: 'Heart', symbol: '♡' },
@@ -64,20 +270,30 @@ const STICKERS = [
 ];
 
 export default function Photobooth() {
-  // Config States
+  // Selected Template Package
+  const [selectedTemplate, setSelectedTemplate] = useState('botanical');
+
+  // Customization States
   const [layout, setLayout] = useState('strip-4');
-  const [theme, setTheme] = useState('white');
-  const [filter, setFilter] = useState('normal');
+  const [filter, setFilter] = useState('soft');
+  const [titleText, setTitleText] = useState('BOTANICAL MEMORY');
+  const [subText, setSubText] = useState('POCKETBOOTH STUDIO');
+  const [sticker, setSticker] = useState('heart');
+  const [showDate, setShowDate] = useState(true);
+
+  // Frame Custom Overrides (from template)
+  const [frameBg, setFrameBg] = useState('#9fb8ad');
+  const [frameText, setFrameText] = useState('#2d4234');
+  const [frameBorder, setFrameBorder] = useState('#87a294');
+  const [frameAccent, setFrameAccent] = useState('#b2c8bd');
+  const [washiType, setWashiType] = useState('grid');
+  const [ornamentType, setOrnamentType] = useState('botanical');
+
+  // Camera & Studio States
   const [timerSeconds, setTimerSeconds] = useState(3);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [mirrorCamera, setMirrorCamera] = useState(true);
   const [facingMode, setFacingMode] = useState('user');
-
-  // Customization
-  const [titleText, setTitleText] = useState('POCKETBOOTH');
-  const [subText, setSubText] = useState('LIFE 4 CUTS STUDIO');
-  const [sticker, setSticker] = useState('heart');
-  const [showDate, setShowDate] = useState(true);
 
   // App & Capture States
   const [photos, setPhotos] = useState({});
@@ -98,10 +314,8 @@ export default function Photobooth() {
   const toastTimeoutRef = useRef(null);
 
   const currentLayoutObj = LAYOUTS.find((l) => l.id === layout) || LAYOUTS[0];
-  const currentThemeObj = THEMES.find((t) => t.id === theme) || THEMES[0];
   const currentFilterObj = FILTERS.find((f) => f.id === filter) || FILTERS[0];
   const currentStickerObj = STICKERS.find((s) => s.id === sticker) || STICKERS[0];
-
   const totalSlots = currentLayoutObj.slots;
 
   // Show Toast
@@ -113,7 +327,23 @@ export default function Photobooth() {
     }, 2500);
   }, []);
 
-  // Load Saved Photos on Mount
+  // Apply a Template Package
+  const applyTemplate = (pkg) => {
+    setSelectedTemplate(pkg.id);
+    setFrameBg(pkg.bg);
+    setFrameText(pkg.text);
+    setFrameBorder(pkg.border);
+    setFrameAccent(pkg.accent);
+    setWashiType(pkg.washi);
+    setOrnamentType(pkg.ornament);
+    setFilter(pkg.defaultFilter);
+    setTitleText(pkg.defaultTitle);
+    setSubText(pkg.defaultSubtext);
+    setSticker(pkg.defaultSticker);
+    showToast(`Template "${pkg.name}" diterapkan! ✨`);
+  };
+
+  // Load Saved Photos
   useEffect(() => {
     getAllPhotos(4).then((stored) => {
       if (stored && Object.keys(stored).length > 0) {
@@ -134,7 +364,7 @@ export default function Photobooth() {
     setIsCameraActive(false);
   }, []);
 
-  // Start Camera Helper
+  // Start Camera Helper with Progressive Fallback
   const startCamera = useCallback(async () => {
     if (!navigator?.mediaDevices?.getUserMedia) {
       showToast('Kamera butuh akses HTTPS atau localhost 🔒');
@@ -145,7 +375,6 @@ export default function Photobooth() {
       stopCamera();
 
       let stream;
-      // 1. Try with facingMode and ideal resolution
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -156,7 +385,6 @@ export default function Photobooth() {
           audio: false,
         });
       } catch (e) {
-        // 2. Fallback to basic video constraint (works across all webcams)
         stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
@@ -191,7 +419,7 @@ export default function Photobooth() {
     }
   }, [facingMode, stopCamera, showToast]);
 
-  // Ensure video element syncs with active stream
+  // Sync Video Element with Stream
   useEffect(() => {
     if (isCameraActive && videoRef.current && streamRef.current) {
       if (videoRef.current.srcObject !== streamRef.current) {
@@ -228,7 +456,6 @@ export default function Photobooth() {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
 
-      // Handle horizontal mirroring
       if (mirrorCamera && facingMode === 'user') {
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
@@ -236,7 +463,6 @@ export default function Photobooth() {
 
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Flash & sound
       setIsFlashing(true);
       if (soundEnabled) playShutterSound();
       setTimeout(() => setIsFlashing(false), 200);
@@ -250,7 +476,7 @@ export default function Photobooth() {
     [mirrorCamera, facingMode, soundEnabled]
   );
 
-  // Single Capture with Optional Timer
+  // Single Capture with Timer
   const handleCapture = useCallback(
     async (slotIndex) => {
       if (!isCameraActive) {
@@ -270,7 +496,6 @@ export default function Photobooth() {
 
       await captureFrame(slotIndex);
 
-      // Auto move to next empty slot
       const nextSlot = (slotIndex + 1) % totalSlots;
       setSelectedSlot(nextSlot);
       showToast(`Slot ${slotIndex + 1} berhasil diambil! ✨`);
@@ -278,14 +503,14 @@ export default function Photobooth() {
     [isCameraActive, startCamera, timerSeconds, soundEnabled, captureFrame, totalSlots, showToast]
   );
 
-  // Auto Burst / Series Mode: Takes All Remaining Slots in Sequence
+  // Auto Burst / Series Mode
   const handleAutoSeries = useCallback(async () => {
     if (!isCameraActive) {
       await startCamera();
     }
 
     setIsAutoShooting(true);
-    showToast('Auto 4-Cuts dimulai! Bersiap pose 📸');
+    showToast('Auto Series dimulai! Bersiap pose 📸');
 
     const effectiveTimer = timerSeconds === 0 ? 3 : timerSeconds;
 
@@ -302,14 +527,14 @@ export default function Photobooth() {
       setCountdown(null);
 
       await captureFrame(slot);
-      await new Promise((res) => setTimeout(res, 800)); // Short pause between shots
+      await new Promise((res) => setTimeout(res, 800));
     }
 
     setIsAutoShooting(false);
     showToast('Selesai! Semua foto siap dicetak 🎉');
   }, [isCameraActive, startCamera, timerSeconds, totalSlots, soundEnabled, captureFrame, showToast]);
 
-  // Upload Local File to Slot
+  // Upload Local File
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -339,7 +564,7 @@ export default function Photobooth() {
     showToast(`Slot ${slotIdx + 1} direset 🔄`);
   };
 
-  // Reset All Slots
+  // Reset All
   const handleResetAll = async () => {
     if (!window.confirm('Reset semua foto di photostrip?')) return;
     await clearAllPhotos();
@@ -355,19 +580,18 @@ export default function Photobooth() {
       setIsDownloading(true);
       showToast('Sedang merender photostrip...');
 
-      // High retina scale for crisp physical-print quality
       const canvas = await html2canvas(stripRef.current, {
         scale: 3,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: currentThemeObj.bg,
+        backgroundColor: frameBg,
         logging: false,
       });
 
       const link = document.createElement('a');
       const now = new Date();
       const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-      link.download = `pocketbooth-${layout}-${dateStr}.png`;
+      link.download = `pocketbooth-${selectedTemplate}-${dateStr}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
 
@@ -380,7 +604,6 @@ export default function Photobooth() {
     }
   };
 
-  // Formatted Today Date
   const todayFormatted = (() => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -392,10 +615,34 @@ export default function Photobooth() {
   const photosCount = Object.keys(photos).filter((k) => photos[k] && Number(k) < totalSlots).length;
 
   return (
-    <div className="min-h-screen bg-[#F6F5F0] text-zinc-900 pb-16 selection:bg-rose-200">
+    <div className="min-h-screen bg-[#f5ede2] text-zinc-900 pb-20 relative overflow-hidden selection:bg-rose-200">
+
+      {/* ── Background Organic Decorations (Aesthetic earthy vibe) ── */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: `
+            radial-gradient(ellipse at 20% 10%, rgba(224,200,180,0.55) 0%, transparent 55%),
+            radial-gradient(ellipse at 80% 85%, rgba(181,201,168,0.35) 0%, transparent 55%),
+            radial-gradient(ellipse at 55% 50%, rgba(240,215,200,0.2) 0%, transparent 70%)
+          `,
+        }}
+      />
+
+      {/* Floating Blobs */}
+      <div className="fixed -top-16 -right-16 w-80 h-80 rounded-full bg-[#e0b9a2]/40 blur-3xl pointer-events-none animate-blob-1" />
+      <div className="fixed -bottom-16 -left-16 w-72 h-72 rounded-full bg-[#b5c9a8]/35 blur-3xl pointer-events-none animate-blob-2" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-[#f0a896]/20 blur-3xl pointer-events-none animate-blob-3" />
+
+      {/* Floating Leaves & Flowers */}
+      <Leaf className="fixed top-2 -left-4 text-[#b5c9a8] w-24 pointer-events-none z-0 animate-leaf opacity-70" />
+      <Leaf className="fixed bottom-4 -right-4 text-[#b5c9a8] w-24 pointer-events-none z-0 animate-leaf-rev opacity-70" />
+      <Flower className="fixed top-24 right-4 text-[#e8b4a0] w-14 pointer-events-none z-0 animate-flower opacity-75" />
+      <Flower className="fixed bottom-28 left-4 text-[#e8b4a0] w-12 pointer-events-none z-0 animate-flower-rev opacity-75" />
+
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900/95 backdrop-blur-md text-white text-xs md:text-sm font-medium px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 border border-zinc-700 animate-in fade-in slide-in-from-top-3">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900/90 backdrop-blur-md text-white text-xs md:text-sm font-medium px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 border border-zinc-700 animate-in fade-in slide-in-from-top-3">
           <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
           <span>{toastMessage}</span>
         </div>
@@ -407,62 +654,107 @@ export default function Photobooth() {
       )}
 
       {/* Header */}
-      <header className="border-b border-zinc-200/80 bg-white/70 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-amber-200/50 bg-white/60 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center font-bold text-sm tracking-tighter shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-[#5d7255] text-white flex items-center justify-center font-bold text-sm shadow-sm">
               PB
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-base tracking-tight font-sans">POCKETBOOTH</h1>
-                <span className="text-[10px] font-mono tracking-widest bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-600 font-semibold border border-zinc-200">
+                <h1 className="font-bold text-base tracking-tight font-sans text-zinc-800">POCKETBOOTH</h1>
+                <span className="text-[10px] font-mono tracking-widest bg-amber-100/70 text-amber-900 px-1.5 py-0.5 rounded font-semibold border border-amber-200/60">
                   포켓부스
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 font-mono tracking-tight -mt-0.5">Korean Self Photo Studio</p>
+              <p className="text-[11px] text-zinc-500 font-mono tracking-tight -mt-0.5">Korean Self Photo Studio</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 transition"
+              className="w-9 h-9 flex items-center justify-center rounded-full border border-amber-200/70 bg-white/80 hover:bg-white text-zinc-600 transition shadow-xs"
               title={soundEnabled ? 'Matikan Suara' : 'Nyalakan Suara'}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-zinc-400" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-zinc-700" /> : <VolumeX className="w-4 h-4 text-zinc-400" />}
             </button>
             <button
               onClick={handleResetAll}
-              className="text-xs font-medium px-3 py-1.5 rounded-full border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 transition flex items-center gap-1.5"
+              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-amber-200/70 bg-white/80 hover:bg-white text-zinc-700 transition flex items-center gap-1.5 shadow-xs"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reset</span>
+              <span className="hidden sm:inline">Reset Semua</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Studio Viewport */}
-      <main className="max-w-6xl mx-auto px-4 pt-6 md:pt-8">
+      <main className="max-w-6xl mx-auto px-4 pt-6 md:pt-8 relative z-10">
+
+        {/* ── PAKET TEMPLATE CAROUSEL SECTION ── */}
+        <section className="mb-6 bg-white/75 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 shadow-sm">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2">
+              <Box className="w-4 h-4 text-emerald-700" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">PILIH PAKET TEMPLATE</h2>
+            </div>
+            <span className="text-[11px] text-zinc-500 font-mono">1-Klik langsung estetik</span>
+          </div>
+
+          {/* Template Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+            {TEMPLATE_PACKAGES.map((pkg) => (
+              <button
+                key={pkg.id}
+                onClick={() => applyTemplate(pkg)}
+                className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group ${
+                  selectedTemplate === pkg.id
+                    ? 'border-zinc-800 ring-2 ring-zinc-800/15 shadow-md bg-white'
+                    : 'border-zinc-200/80 bg-white/60 hover:bg-white text-zinc-700 hover:shadow-xs'
+                }`}
+              >
+                <div className="flex items-start justify-between w-full">
+                  <span
+                    className="w-5 h-5 rounded-md border shadow-2xs flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: pkg.bg, borderColor: pkg.border }}
+                  >
+                    {selectedTemplate === pkg.id && <Check className="w-3 h-3 text-white drop-shadow-xs" />}
+                  </span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700">
+                    {pkg.badge.split(' ')[0]}
+                  </span>
+                </div>
+
+                <div>
+                  <p className="font-bold text-xs text-zinc-900 leading-tight truncate">{pkg.name}</p>
+                  <p className="text-[10px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ── STUDIO CONTENT: Viewfinder (Left) & Photostrip Preview (Right) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* ── LEFT: Camera & Controls (7 Cols) ── */}
+          {/* ── LEFT: Camera & Studio Controls (7 Cols) ── */}
           <div className="lg:col-span-7 flex flex-col gap-5">
 
             {/* Viewfinder Card */}
-            <div className="bg-white rounded-3xl p-4 md:p-5 shadow-sm border border-zinc-200/90 relative overflow-hidden">
+            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 md:p-5 shadow-sm border border-amber-200/70 relative overflow-hidden">
               <div className="flex items-center justify-between mb-3 text-xs text-zinc-500 font-mono">
-                <span className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300'}`} />
-                  {isCameraActive ? 'LIVE CAMERA' : 'STANDBY'}
+                <span className="flex items-center gap-1.5 font-bold">
+                  <span className={`w-2.5 h-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300'}`} />
+                  {isCameraActive ? 'LIVE CAMERA ACTIVE' : 'STANDBY MODE'}
                 </span>
-                <span className="bg-zinc-100 px-2 py-0.5 rounded text-[11px] font-semibold text-zinc-700">
-                  SLOT {selectedSlot + 1} OF {totalSlots}
+                <span className="bg-amber-100/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-amber-900 border border-amber-200/60">
+                  SLOT {selectedSlot + 1} DARI {totalSlots}
                 </span>
               </div>
 
-              {/* Viewfinder Window */}
+              {/* Viewfinder Window (Video always in DOM) */}
               <div className="relative aspect-[4/3] rounded-2xl bg-zinc-950 overflow-hidden flex items-center justify-center shadow-inner group">
                 <video
                   ref={videoRef}
@@ -479,18 +771,18 @@ export default function Photobooth() {
 
                 {!isCameraActive && (
                   <div className="text-center p-6 flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
+                    <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shadow-md">
                       <Camera className="w-8 h-8" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-zinc-300">Kamera Belum Aktif</p>
-                      <p className="text-xs text-zinc-500 mt-1 max-w-xs">
-                        Klik tombol di bawah untuk menyalakan kamera & mulai sesi foto Korean Photobooth kamu.
+                      <p className="text-sm font-bold text-zinc-200">Kamera Belum Aktif</p>
+                      <p className="text-xs text-zinc-400 mt-1 max-w-xs leading-relaxed">
+                        Nyalakan kamera untuk mulai memotret photostrip kamu.
                       </p>
                     </div>
                     <button
                       onClick={startCamera}
-                      className="mt-2 text-xs font-semibold px-4 py-2 bg-white text-zinc-900 rounded-full hover:bg-zinc-100 transition shadow"
+                      className="mt-2 text-xs font-bold px-5 py-2.5 bg-white text-zinc-900 rounded-full hover:bg-zinc-100 transition shadow"
                     >
                       Buka Kamera
                     </button>
@@ -499,14 +791,14 @@ export default function Photobooth() {
 
                 {/* Live Countdown Overlay */}
                 {countdown !== null && (
-                  <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-30 pointer-events-none">
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center z-30 pointer-events-none">
                     <div className="text-8xl md:text-9xl font-black text-white font-mono drop-shadow-2xl animate-ping">
                       {countdown}
                     </div>
                   </div>
                 )}
 
-                {/* Viewfinder Guidelines Overlay (Rule of Thirds) */}
+                {/* Viewfinder Rule-of-Thirds Grid */}
                 {isCameraActive && (
                   <div className="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3 opacity-15">
                     <div className="border-r border-b border-white" />
@@ -515,17 +807,17 @@ export default function Photobooth() {
                     <div className="border-r border-b border-white" />
                     <div className="border-r border-b border-white" />
                     <div className="border-b border-white" />
-                    <div className="border-r border-white" />
-                    <div className="border-r border-white" />
+                    <div className="border-r border-b border-white" />
+                    <div className="border-r border-b border-white" />
                     <div />
                   </div>
                 )}
 
-                {/* Viewfinder Header Controls Floating */}
+                {/* Floating Viewfinder Controls */}
                 {isCameraActive && (
                   <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-auto">
                     {/* Timer Selector */}
-                    <div className="bg-black/60 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1 text-[11px] text-white border border-white/10">
+                    <div className="bg-black/65 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1 text-[11px] text-white border border-white/10 shadow-md">
                       <Timer className="w-3.5 h-3.5 text-zinc-300 ml-1" />
                       {[0, 3, 5].map((sec) => (
                         <button
@@ -541,7 +833,7 @@ export default function Photobooth() {
                     </div>
 
                     {/* Camera Utilities */}
-                    <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/10">
+                    <div className="flex items-center gap-1.5 bg-black/65 backdrop-blur-md rounded-full p-1 border border-white/10 shadow-md">
                       <button
                         onClick={() => setMirrorCamera(!mirrorCamera)}
                         className={`px-2 py-1 text-[10px] font-bold rounded-full transition ${
@@ -563,24 +855,24 @@ export default function Photobooth() {
                 )}
               </div>
 
-              {/* Shutter & Main Action Row */}
+              {/* Shutter & Actions */}
               <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
-                {/* Auto Series (Burst Mode) */}
+                {/* Auto Series */}
                 <button
                   onClick={handleAutoSeries}
                   disabled={isAutoShooting}
-                  className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-bold text-xs tracking-wide shadow-md transition flex items-center justify-center gap-2 group disabled:opacity-50"
-                  title="Ambil 4 foto otomatis berurutan seperti photobooth sungguhan"
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white font-bold text-xs tracking-wide shadow-md transition flex items-center justify-center gap-2 group disabled:opacity-50"
+                  title="Ambil foto otomatis berurutan sesuai layout"
                 >
                   <Zap className="w-4 h-4 fill-current group-hover:scale-110 transition" />
                   <span>{isAutoShooting ? 'MEMOTRET...' : 'AUTO 4-CUTS'}</span>
                 </button>
 
-                {/* Primary Tactile Shutter Button */}
+                {/* Primary Shutter */}
                 <button
                   onClick={() => handleCapture(selectedSlot)}
                   disabled={isAutoShooting}
-                  className="w-full flex-1 py-3.5 px-6 rounded-2xl bg-zinc-900 hover:bg-black text-white font-bold text-sm tracking-wide shadow-lg transition flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
+                  className="w-full flex-1 py-3.5 px-6 rounded-2xl bg-zinc-900 hover:bg-black text-white font-bold text-sm tracking-wide shadow-md transition flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
                 >
                   <Camera className="w-4 h-4" />
                   <span>
@@ -595,17 +887,17 @@ export default function Photobooth() {
                 {/* Upload Local Image */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full sm:w-auto p-3.5 rounded-2xl border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                  className="w-full sm:w-auto p-3.5 rounded-2xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-700 font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
                   title="Upload Foto Sendiri"
                 >
                   <Upload className="w-4 h-4" />
-                  <span className="sm:hidden">Upload Foto</span>
+                  <span className="sm:hidden">Upload File</span>
                 </button>
               </div>
 
               {/* Slot Indicator Pills */}
-              <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
-                <span className="text-zinc-500 font-mono text-[11px]">PILIH SLOT:</span>
+              <div className="mt-4 pt-3 border-t border-amber-200/50 flex items-center justify-between text-xs">
+                <span className="text-zinc-500 font-mono text-[11px] font-bold">PILIH SLOT FRAME:</span>
                 <div className="flex items-center gap-2">
                   {Array.from({ length: totalSlots }).map((_, idx) => (
                     <button
@@ -615,8 +907,8 @@ export default function Photobooth() {
                         selectedSlot === idx
                           ? 'bg-zinc-900 text-white shadow-sm'
                           : photos[idx]
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                       }`}
                     >
                       <span>#{idx + 1}</span>
@@ -627,12 +919,12 @@ export default function Photobooth() {
               </div>
             </div>
 
-            {/* Studio Customization Panels (Accordions / Tabs) */}
-            <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/90 flex flex-col gap-5">
+            {/* Customization Details (Accordion/Tabs) */}
+            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 flex flex-col gap-5">
 
-              {/* 1. Layout Selection */}
+              {/* 1. Layout Mode */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-2.5 flex items-center gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
                   <LayoutGrid className="w-3.5 h-3.5" />
                   PILIH STRIP LAYOUT
                 </label>
@@ -647,7 +939,7 @@ export default function Photobooth() {
                       className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between h-20 ${
                         layout === item.id
                           ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                          : 'border-zinc-200 bg-zinc-50/50 hover:bg-zinc-50 text-zinc-800'
+                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -664,9 +956,9 @@ export default function Photobooth() {
 
               {/* 2. Photo Filters */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-2.5 flex items-center gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5" />
-                  KOREAN FILTER AESTHETIC
+                  FILTER FOTO ESTETIK
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {FILTERS.map((f) => (
@@ -676,75 +968,47 @@ export default function Photobooth() {
                       className={`p-2 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
                         filter === f.id
                           ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                          : 'border-zinc-200 hover:bg-zinc-50 text-zinc-700'
+                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
                       }`}
                     >
-                      <span className={`w-5 h-5 rounded-full ${f.preview} border border-white/40 shadow-xs`} />
+                      <span className={`w-5 h-5 rounded-full ${f.preview} border border-white/40 shadow-2xs`} />
                       <span className="text-[10px] font-bold tracking-tight">{f.name}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* 3. Frame Color Themes */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-2.5 flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5" />
-                  WARNA FRAME PHOTOSTRIP
-                </label>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                  {THEMES.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => setTheme(t.id)}
-                      className={`p-1.5 rounded-xl border transition flex flex-col items-center gap-1 text-center ${
-                        theme === t.id ? 'border-zinc-900 ring-2 ring-zinc-900/10' : 'border-zinc-200 hover:bg-zinc-50'
-                      }`}
-                      title={t.name}
-                    >
-                      <span
-                        className="w-7 h-7 rounded-lg border shadow-xs flex items-center justify-center"
-                        style={{ backgroundColor: t.bg, borderColor: t.border }}
-                      >
-                        {theme === t.id && <Check className="w-3 h-3" style={{ color: t.text }} />}
-                      </span>
-                      <span className="text-[9px] font-medium text-zinc-500 truncate w-full">{t.name.split(' ')[0]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 4. Text & Sticker Customization */}
-              <div className="pt-2 border-t border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {/* 3. Text & Stickers */}
+              <div className="pt-2 border-t border-amber-200/50 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="text-[11px] font-bold text-zinc-500 mb-1 block">JUDUL STRIP</label>
+                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">JUDUL STRIP</label>
                   <input
                     type="text"
                     value={titleText}
                     onChange={(e) => setTitleText(e.target.value.toUpperCase())}
                     maxLength={20}
                     placeholder="POCKETBOOTH"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 font-mono text-xs focus:outline-none focus:border-zinc-800"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 font-mono text-xs focus:outline-none focus:border-zinc-800 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-zinc-500 mb-1 block">SUBTITEL / CAPTION</label>
+                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">SUBTITEL / CAPTION</label>
                   <input
                     type="text"
                     value={subText}
                     onChange={(e) => setSubText(e.target.value)}
                     maxLength={28}
                     placeholder="LIFE 4 CUTS STUDIO"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-xs focus:outline-none focus:border-zinc-800"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-xs focus:outline-none focus:border-zinc-800 bg-white"
                   />
                 </div>
               </div>
 
-              {/* 5. Sticker Stamp Selector */}
+              {/* 4. Korean Sticker & Date */}
               <div>
-                <label className="text-[11px] font-bold text-zinc-500 mb-2 block flex items-center justify-between">
+                <label className="text-[11px] font-bold text-zinc-600 mb-2 block flex items-center justify-between">
                   <span>IKON STIKER KOREA</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-400 text-[10px]">
+                  <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 text-[10px]">
                     <input
                       type="checkbox"
                       checked={showDate}
@@ -762,7 +1026,7 @@ export default function Photobooth() {
                       className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1 flex-shrink-0 ${
                         sticker === s.id
                           ? 'border-zinc-900 bg-zinc-900 text-white'
-                          : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
+                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
                       }`}
                     >
                       <span>{s.symbol || '∅'}</span>
@@ -775,48 +1039,50 @@ export default function Photobooth() {
             </div>
           </div>
 
-          {/* ── RIGHT: Physical Photostrip Preview & Download (5 Cols) ── */}
+          {/* ── RIGHT: Photostrip Print Preview (5 Cols) ── */}
           <div className="lg:col-span-5 flex flex-col items-center gap-4">
 
             <div className="w-full flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-zinc-500 font-mono tracking-wider">
+              <span className="text-xs font-bold text-zinc-600 font-mono tracking-wider">
                 PHOTOSTRIP PREVIEW ({photosCount}/{totalSlots})
               </span>
               <button
                 onClick={handleDownload}
                 disabled={isDownloading || photosCount === 0}
-                className="px-4 py-2 rounded-full bg-zinc-900 hover:bg-black text-white text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40"
+                className="px-5 py-2.5 rounded-full bg-zinc-900 hover:bg-black text-white text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>{isDownloading ? 'Menyimpan...' : 'Download Print'}</span>
               </button>
             </div>
 
-            {/* The Actual Captured Card Container */}
-            <div className="p-4 bg-zinc-200/50 rounded-3xl border border-zinc-300/60 shadow-inner flex justify-center w-full overflow-hidden">
+            {/* The Actual Captured Photostrip Card */}
+            <div className="p-5 bg-stone-300/40 backdrop-blur-md rounded-3xl border border-stone-300/80 shadow-inner flex justify-center w-full overflow-hidden">
               <div
                 ref={stripRef}
                 style={{
-                  backgroundColor: currentThemeObj.bg,
-                  color: currentThemeObj.text,
-                  borderColor: currentThemeObj.border,
+                  backgroundColor: frameBg,
+                  color: frameText,
+                  borderColor: frameBorder,
                 }}
-                className={`transition-colors duration-200 shadow-2xl rounded-xl p-4 flex flex-col items-center ${
-                  layout === 'grid-4' ? 'w-[320px]' : 'w-[260px]'
+                className={`relative transition-colors duration-200 shadow-2xl rounded-2xl p-4 sm:p-5 flex flex-col items-center border ${
+                  layout === 'grid-4' ? 'w-[330px]' : 'w-[275px]'
                 }`}
               >
-                {/* Photostrip Frames */}
+                {/* Photostrip Frames with Washi & Doodles */}
                 {layout === 'grid-4' ? (
-                  // 2x2 Grid Layout
-                  <div className="grid grid-cols-2 gap-2.5 w-full">
+                  <div className="grid grid-cols-2 gap-3 w-full relative">
                     {Array.from({ length: 4 }).map((_, idx) => (
                       <PhotoSlot
                         key={idx}
                         index={idx}
                         photo={photos[idx]}
                         filterClass={currentFilterObj.class}
-                        theme={currentThemeObj}
+                        accentColor={frameAccent}
+                        borderColor={frameBorder}
+                        textColor={frameText}
                         isActive={selectedSlot === idx}
+                        washiType={idx === 0 || idx === 1 ? washiType : 'none'}
                         onSelect={() => setSelectedSlot(idx)}
                         onReset={(e) => handleResetSlot(idx, e)}
                         aspect="aspect-[4/3]"
@@ -824,26 +1090,49 @@ export default function Photobooth() {
                     ))}
                   </div>
                 ) : (
-                  // Vertical Strip Layout (3 or 4 cuts)
-                  <div className="flex flex-col gap-2.5 w-full">
+                  <div className="flex flex-col gap-3.5 w-full relative">
                     {Array.from({ length: totalSlots }).map((_, idx) => (
-                      <PhotoSlot
-                        key={idx}
-                        index={idx}
-                        photo={photos[idx]}
-                        filterClass={currentFilterObj.class}
-                        theme={currentThemeObj}
-                        isActive={selectedSlot === idx}
-                        onSelect={() => setSelectedSlot(idx)}
-                        onReset={(e) => handleResetSlot(idx, e)}
-                        aspect="aspect-[4/3]"
-                      />
+                      <div key={idx} className="relative">
+                        <PhotoSlot
+                          index={idx}
+                          photo={photos[idx]}
+                          filterClass={currentFilterObj.class}
+                          accentColor={frameAccent}
+                          borderColor={frameBorder}
+                          textColor={frameText}
+                          isActive={selectedSlot === idx}
+                          washiType={washiType}
+                          onSelect={() => setSelectedSlot(idx)}
+                          onReset={(e) => handleResetSlot(idx, e)}
+                          aspect="aspect-[4/3]"
+                        />
+
+                        {/* Botanical Doodles for Botanical Theme */}
+                        {ornamentType === 'botanical' && idx === 0 && (
+                          <div className="absolute -left-3.5 -bottom-5 pointer-events-none z-20">
+                            <LeafStem1 />
+                          </div>
+                        )}
+                        {ornamentType === 'botanical' && idx === 1 && (
+                          <div className="absolute -right-3 -top-2 pointer-events-none z-20">
+                            <LeafStem2 />
+                          </div>
+                        )}
+                        {ornamentType === 'botanical' && idx === totalSlots - 1 && (
+                          <div className="absolute -right-2 -bottom-2 pointer-events-none z-20">
+                            <HeartHandDrawn color="#5d7255" width={16} height={16} />
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
 
-                {/* Bottom Photostrip Branding Stamp */}
-                <div className="mt-4 pt-3 w-full border-t flex flex-col items-center text-center gap-1" style={{ borderColor: currentThemeObj.border }}>
+                {/* Bottom Photostrip Stamp */}
+                <div
+                  className="mt-5 pt-3.5 w-full border-t flex flex-col items-center text-center gap-1 relative"
+                  style={{ borderColor: frameBorder }}
+                >
                   {currentStickerObj.symbol && (
                     <div className="text-base select-none leading-none mb-0.5">
                       {currentStickerObj.symbol}
@@ -855,34 +1144,33 @@ export default function Photobooth() {
                   </div>
 
                   {subText && (
-                    <div className="text-[9px] tracking-wider uppercase font-medium leading-tight opacity-75">
+                    <div className="text-[9px] tracking-wider uppercase font-medium leading-tight opacity-80">
                       {subText}
                     </div>
                   )}
 
                   {showDate && (
-                    <div className="font-mono text-[8px] tracking-widest mt-1 opacity-60">
+                    <div className="font-mono text-[8px] tracking-widest mt-1 opacity-70">
                       {todayFormatted} • STUDIO
                     </div>
                   )}
 
-                  {/* Decorative Barcode / Serial Line */}
-                  <div className="mt-2 text-[7px] font-mono tracking-[0.25em] opacity-40 select-none">
+                  {/* Aesthetic Barcode Line */}
+                  <div className="mt-2 text-[7px] font-mono tracking-[0.25em] opacity-45 select-none">
                     |||| || ||| || ||||| | ||
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Quick Helper Text */}
-            <p className="text-[11px] text-zinc-400 text-center max-w-xs font-mono">
-              💡 Tip: Klik salah satu frame foto untuk memilih slot yang ingin kamu foto ulang.
+            <p className="text-[11px] text-zinc-500 text-center max-w-xs font-mono">
+              💡 Tip: Pilih paket template di atas atau klik slot frame untuk retake foto tertentu.
             </p>
           </div>
         </div>
       </main>
 
-      {/* Hidden File Input for Image Upload */}
+      {/* Hidden File Input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -891,51 +1179,57 @@ export default function Photobooth() {
         className="hidden"
       />
 
-      {/* Hidden Canvas for Processing Image Captures */}
+      {/* Hidden Canvas for Captures */}
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
 
-// Individual Photo Slot Component
-function PhotoSlot({ index, photo, filterClass, theme, isActive, onSelect, onReset, aspect }) {
+// Individual Photo Slot Frame with Washi Tape
+function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textColor, isActive, washiType, onSelect, onReset, aspect }) {
   return (
     <div
       onClick={onSelect}
-      className={`relative w-full ${aspect} rounded-lg overflow-hidden cursor-pointer transition group border`}
+      className={`relative w-full ${aspect} rounded-xl overflow-visible cursor-pointer transition group border`}
       style={{
-        backgroundColor: theme.accent,
-        borderColor: isActive ? '#000000' : theme.border,
+        backgroundColor: accentColor,
+        borderColor: isActive ? '#000000' : borderColor,
       }}
     >
-      {photo ? (
-        <>
-          <img
-            src={photo}
-            alt={`Slot ${index + 1}`}
-            className={`w-full h-full object-cover ${filterClass}`}
-          />
-          {/* Retake Button overlay */}
-          <button
-            onClick={onReset}
-            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow hover:bg-black"
-            title="Reset slot ini"
-          >
-            <RefreshCw className="w-3 h-3" />
-          </button>
-        </>
-      ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-zinc-400 hover:text-zinc-600 transition">
-          <Camera className="w-5 h-5 opacity-40" />
-          <span className="font-mono text-[9px] font-bold tracking-wider opacity-60">
-            {isActive ? 'READY' : `SLOT ${index + 1}`}
-          </span>
-        </div>
-      )}
+      {/* Decorative Washi Tape on top edge */}
+      <WashiTape type={washiType} />
+
+      {/* Inner Image Container */}
+      <div className="w-full h-full rounded-xl overflow-hidden relative">
+        {photo ? (
+          <>
+            <img
+              src={photo}
+              alt={`Slot ${index + 1}`}
+              className={`w-full h-full object-cover ${filterClass}`}
+            />
+            {/* Retake Button */}
+            <button
+              onClick={onReset}
+              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow hover:bg-black z-30"
+              title="Reset slot ini"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          </>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1 transition" style={{ color: textColor }}>
+            <Camera className="w-5 h-5 opacity-40" />
+            <span className="font-mono text-[9px] font-bold tracking-wider opacity-60">
+              {isActive ? 'READY' : `SLOT ${index + 1}`}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Active Indicator Ring */}
       {isActive && (
-        <div className="absolute inset-0 border-2 border-zinc-900 pointer-events-none rounded-lg" />
+        <div className="absolute inset-0 border-2 border-zinc-900 pointer-events-none rounded-xl z-20" />
       )}
     </div>
   );
