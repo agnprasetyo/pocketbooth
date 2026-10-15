@@ -15,6 +15,7 @@ import {
   Sliders,
   Zap,
   Box,
+  ChevronDown,
 } from 'lucide-react';
 import { savePhoto, getAllPhotos, deletePhoto, clearAllPhotos } from '../db/photoDb';
 import { playCountdownBeep, playShutterSound } from '../utils/audio';
@@ -300,9 +301,9 @@ function ThemeStripOrnaments({ type, text, border }) {
 // ── PAKET TEMPLATE CATEGORIES ──
 const THEME_CATEGORIES = [
   { id: 'all', label: 'Semua Tema' },
-  { id: 'korean', label: 'Korean / Aesthetic' },
-  { id: 'vintage', label: 'Vintage / Retro' },
-  { id: 'modern', label: 'Modern / Futuristic' },
+  { id: 'korean', label: 'Aesthetic Pastel' },
+  { id: 'vintage', label: 'Retro Analog' },
+  { id: 'modern', label: 'Neo Futuristic' },
 ];
 
 // ── PAKET TEMPLATE (Presets - Korean/Aesthetic, Vintage/Retro, & Modern/Futuristic) ──
@@ -550,8 +551,8 @@ const TEMPLATE_PACKAGES = [
 
 // Layout Options
 const LAYOUTS = [
-  { id: 'strip-4', label: '4-Cuts Strip', slots: 4, desc: 'Classic vertical photostrip' },
   { id: 'strip-3', label: '3-Cuts Strip', slots: 3, desc: '3-photo vertical strip' },
+  { id: 'strip-4', label: '4-Cuts Strip', slots: 4, desc: 'Classic vertical photostrip' },
   { id: 'grid-4', label: '2x2 Grid', slots: 4, desc: 'Quad 2x2 grid layout' },
 ];
 
@@ -581,12 +582,15 @@ const STICKERS = [
 ];
 
 export default function Photobooth() {
+  // View Modes: 'studio' (Standby Mode & Photostrip Preview) | 'desain' (Pilih Paket Tema & Strip Layout)
+  const [activeTab, setActiveTab] = useState('studio');
+
   // Selected Template Category & Package
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedTemplate, setSelectedTemplate] = useState('botanical');
 
   // Customization States
-  const [layout, setLayout] = useState('strip-4');
+  const [layout, setLayout] = useState('strip-3');
   const [filter, setFilter] = useState('soft');
   const [titleText, setTitleText] = useState('BOTANICAL MEMORY');
   const [subText, setSubText] = useState('SELF PHOTO STUDIO');
@@ -994,72 +998,50 @@ export default function Photobooth() {
       {/* Main Studio Viewport */}
       <main className="max-w-6xl mx-auto px-4 pt-6 md:pt-8 relative z-10">
 
-        {/* ── PAKET TEMPLATE CAROUSEL SECTION ── */}
-        <section className="mb-6 bg-white/75 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 px-1">
-            <div className="flex items-center gap-2">
-              <Box className="w-4 h-4 text-emerald-700" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">PILIH PAKET TEMPLATE</h2>
-            </div>
+        {/* ── SEGMENTED TOP MENU NAVIGATION ── */}
+        <div className="flex items-center justify-center mb-6">
+          <nav className="inline-flex p-1.5 rounded-2xl bg-white/80 backdrop-blur-md border border-amber-200/70 shadow-xs gap-1.5">
+            <button
+              onClick={() => setActiveTab('studio')}
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'studio'
+                  ? 'bg-zinc-900 text-white shadow-xs'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Standby Mode & Preview</span>
+              {isCameraActive && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+              {photosCount > 0 && (
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                  {photosCount}/{totalSlots}
+                </span>
+              )}
+            </button>
 
-            {/* Category Filter Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-              {THEME_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition flex-shrink-0 ${
-                    selectedCategory === cat.id
-                      ? 'bg-zinc-900 text-white shadow-xs'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-          </div>
+            <button
+              onClick={() => setActiveTab('desain')}
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'desain'
+                  ? 'bg-zinc-900 text-white shadow-xs'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Pilih Paket Tema & Strip Layout</span>
+            </button>
+          </nav>
+        </div>
 
-          {/* Template Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-            {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).map((pkg) => (
-              <button
-                key={pkg.id}
-                onClick={() => applyTemplate(pkg)}
-                className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group ${
-                  selectedTemplate === pkg.id
-                    ? 'border-zinc-800 ring-2 ring-zinc-800/15 shadow-md bg-white'
-                    : 'border-zinc-200/80 bg-white/60 hover:bg-white text-zinc-700 hover:shadow-xs'
-                }`}
-              >
-                <div className="flex items-start justify-between w-full">
-                  <span
-                    className="w-5 h-5 rounded-md border shadow-2xs flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: pkg.bg, borderColor: pkg.border }}
-                  >
-                    {selectedTemplate === pkg.id && <Check className="w-3 h-3 text-white drop-shadow-xs" />}
-                  </span>
-                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 truncate max-w-[70px]">
-                    {pkg.badge}
-                  </span>
-                </div>
+                {/* ── 1. TAMPILAN: STANDBY MODE & PHOTOSTRIP PREVIEW ── */}
+        <div className={activeTab === "studio" ? "block" : "hidden"}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                <div>
-                  <p className="font-bold text-xs text-zinc-900 leading-tight truncate">{pkg.name}</p>
-                  <p className="text-[10px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* ── STUDIO CONTENT: Viewfinder (Left) & Photostrip Preview (Right) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-          {/* ── LEFT: Camera & Studio Controls (7 Cols) ── */}
-          <div className="lg:col-span-7 flex flex-col gap-5">
-
-            {/* Viewfinder Card */}
+            {/* ── LEFT: Standby Mode (7 Cols) ── */}
+            <div className="lg:col-span-7 flex flex-col gap-4">
+              {/* Viewfinder Card */}
             <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 md:p-5 shadow-sm border border-amber-200/70 relative overflow-hidden">
               <div className="flex items-center justify-between mb-3 text-xs text-zinc-500 font-mono">
                 <span className="flex items-center gap-1.5 font-bold">
@@ -1236,144 +1218,39 @@ export default function Photobooth() {
               </div>
             </div>
 
-            {/* Customization Details */}
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 flex flex-col gap-5">
-
-              {/* 1. Layout Mode */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  PILIH STRIP LAYOUT
-                </label>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {LAYOUTS.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setLayout(item.id);
-                        if (selectedSlot >= item.slots) setSelectedSlot(0);
-                      }}
-                      className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between h-20 ${
-                        layout === item.id
-                          ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs">{item.label}</span>
-                        {layout === item.id && <Check className="w-3.5 h-3.5 text-white" />}
-                      </div>
-                      <span className={`text-[10px] leading-tight ${layout === item.id ? 'text-zinc-300' : 'text-zinc-400'}`}>
-                        {item.desc}
-                      </span>
-                    </button>
-                  ))}
+              {/* Quick Bar to open Customization */}
+              <div className="bg-white/80 backdrop-blur-md rounded-2xl p-3 px-4 border border-amber-200/60 shadow-xs flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className="text-zinc-500 font-bold">TEMA:</span>
+                  <strong className="text-zinc-800">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
                 </div>
-              </div>
-
-              {/* 2. Photo Filters */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
+                <button
+                  onClick={() => setActiveTab("desain")}
+                  className="px-3.5 py-1.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
                   <Sliders className="w-3.5 h-3.5" />
-                  FILTER FOTO
-                </label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {FILTERS.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => setFilter(f.id)}
-                      className={`p-2 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
-                        filter === f.id
-                          ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
-                      }`}
-                    >
-                      <span className={`w-5 h-5 rounded-full ${f.preview} border border-white/40 shadow-2xs`} />
-                      <span className="text-[10px] font-bold tracking-tight">{f.name}</span>
-                    </button>
-                  ))}
-                </div>
+                  <span>Ubah Tema & Strip Layout</span>
+                </button>
               </div>
-
-              {/* 3. Text Customization */}
-              <div className="pt-2 border-t border-amber-200/50 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">JUDUL STRIP</label>
-                  <input
-                    type="text"
-                    value={titleText}
-                    onChange={(e) => setTitleText(e.target.value.toUpperCase())}
-                    maxLength={22}
-                    placeholder="POCKETBOOTH"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 font-mono text-xs focus:outline-none focus:border-zinc-800 bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">SUBTITEL / CAPTION</label>
-                  <input
-                    type="text"
-                    value={subText}
-                    onChange={(e) => setSubText(e.target.value)}
-                    maxLength={28}
-                    placeholder="SELF PHOTO STUDIO"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-xs focus:outline-none focus:border-zinc-800 bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* 4. Stickers & Date */}
-              <div>
-                <label className="text-[11px] font-bold text-zinc-600 mb-2 block flex items-center justify-between">
-                  <span>PILIH STIKER</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 text-[10px]">
-                    <input
-                      type="checkbox"
-                      checked={showDate}
-                      onChange={(e) => setShowDate(e.target.checked)}
-                      className="rounded text-zinc-900 focus:ring-0"
-                    />
-                    Tampilkan Tanggal
-                  </label>
-                </label>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                  {STICKERS.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSticker(s.id)}
-                      className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1 flex-shrink-0 ${
-                        sticker === s.id
-                          ? 'border-zinc-900 bg-zinc-900 text-white'
-                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
-                      }`}
-                    >
-                      <span>{s.symbol || '∅'}</span>
-                      <span className="text-[10px]">{s.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          {/* ── RIGHT: Photostrip Print Preview (5 Cols) ── */}
-          <div className="lg:col-span-5 flex flex-col items-center gap-4">
-
-            <div className="w-full flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-zinc-600 font-mono tracking-wider">
-                PHOTOSTRIP PREVIEW ({photosCount}/{totalSlots})
-              </span>
-              <button
-                onClick={handleDownload}
-                disabled={isDownloading || photosCount === 0}
-                className="px-5 py-2.5 rounded-full bg-zinc-900 hover:bg-black text-white text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>{isDownloading ? 'Menyimpan...' : 'Download Print'}</span>
-              </button>
             </div>
 
-            {/* The Actual Captured Photostrip Card */}
+            {/* ── RIGHT: Photostrip Print Preview (5 Cols) ── */}
+            <div className="lg:col-span-5 flex flex-col items-center gap-4 lg:sticky lg:top-20">
+              <div className="w-full flex items-center justify-between px-1">
+                <span className="text-xs font-bold text-zinc-600 font-mono tracking-wider">
+                  PHOTOSTRIP PREVIEW ({photosCount}/{totalSlots})
+                </span>
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading || photosCount === 0}
+                  className="px-5 py-2.5 rounded-full bg-zinc-900 hover:bg-black text-white text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{isDownloading ? "Menyimpan..." : "Download Print"}</span>
+                </button>
+              </div>
+
+              {/* The Actual Captured Photostrip Card */}
             <div className="p-5 bg-stone-300/40 backdrop-blur-md rounded-3xl border border-stone-300/80 shadow-inner flex justify-center w-full overflow-hidden">
               <div
                 ref={stripRef}
@@ -1515,9 +1392,221 @@ export default function Photobooth() {
               </div>
             </div>
 
-            <p className="text-[11px] text-zinc-500 text-center max-w-xs font-mono">
-              💡 Tip: Pilih paket template di atas atau klik slot frame untuk retake foto tertentu.
-            </p>
+              <p className="text-[11px] text-zinc-500 text-center max-w-xs font-mono">
+                💡 Tip: Klik slot frame foto pada strip untuk retake foto tertentu di kamera.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2. TAMPILAN: PILIH PAKET TEMA & STRIP LAYOUT ── */}
+        <div className={activeTab === "desain" ? "block" : "hidden"}>
+          <div className="max-w-4xl mx-auto flex flex-col gap-6">
+
+            {/* Section A: Pilih Paket Tema */}
+            <section className="max-w-4xl mx-auto mb-6 bg-white/75 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 px-1">
+              <div className="flex items-center gap-2">
+                <Box className="w-4 h-4 text-emerald-700" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">PILIH PAKET TEMA</h2>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100/80 text-amber-900 border border-amber-200/60">
+                  {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).length} TEMA
+                </span>
+              </div>
+
+              {/* Category Filter Dropdown */}
+              <div className="relative inline-flex items-center">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="appearance-none pl-3 pr-8 py-1.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-700 bg-white hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-800 transition shadow-xs cursor-pointer"
+                >
+                  {THEME_CATEGORIES.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-500 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+              </div>
+            </div>
+
+            {/* Template Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+              {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).map((pkg) => {
+                const isSelected = selectedTemplate === pkg.id;
+                return (
+                  <button
+                    key={pkg.id}
+                    onClick={() => applyTemplate(pkg)}
+                    className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group cursor-pointer active:scale-[0.98] ${
+                      isSelected
+                        ? 'border-zinc-900 ring-2 ring-zinc-900/15 shadow-md bg-white'
+                        : 'border-zinc-200/80 bg-white/70 hover:bg-white text-zinc-700 hover:shadow-xs hover:border-zinc-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between w-full">
+                      <span
+                        className="w-5 h-5 rounded-md border shadow-2xs flex-shrink-0"
+                        style={{ backgroundColor: pkg.bg, borderColor: pkg.border }}
+                        title={`Warna latar: ${pkg.bg}`}
+                      />
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 truncate max-w-[70px]">
+                          {pkg.badge}
+                        </span>
+                        {isSelected && (
+                          <span className="w-4 h-4 rounded-full bg-zinc-900 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className={`font-bold text-xs leading-tight truncate ${isSelected ? 'text-zinc-900 font-extrabold' : 'text-zinc-800'}`}>
+                        {pkg.name}
+                      </p>
+                      <p className="text-[10px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+            {/* Section B: Pilih Strip Layout */}
+            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 flex flex-col gap-5">
+
+              {/* 1. Layout Mode */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  PILIH STRIP LAYOUT
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {LAYOUTS.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setLayout(item.id);
+                        if (selectedSlot >= item.slots) setSelectedSlot(0);
+                      }}
+                      className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between h-20 ${
+                        layout === item.id
+                          ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
+                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs">{item.label}</span>
+                        {layout === item.id && <Check className="w-3.5 h-3.5 text-white" />}
+                      </div>
+                      <span className={`text-[10px] leading-tight ${layout === item.id ? 'text-zinc-300' : 'text-zinc-400'}`}>
+                        {item.desc}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Photo Filters */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5" />
+                  FILTER FOTO
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {FILTERS.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setFilter(f.id)}
+                      className={`p-2 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
+                        filter === f.id
+                          ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
+                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-full ${f.preview} border border-white/40 shadow-2xs`} />
+                      <span className="text-[10px] font-bold tracking-tight">{f.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Text Customization */}
+              <div className="pt-2 border-t border-amber-200/50 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">JUDUL STRIP</label>
+                  <input
+                    type="text"
+                    value={titleText}
+                    onChange={(e) => setTitleText(e.target.value.toUpperCase())}
+                    maxLength={22}
+                    placeholder="POCKETBOOTH"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 font-mono text-xs focus:outline-none focus:border-zinc-800 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">SUBTITEL / CAPTION</label>
+                  <input
+                    type="text"
+                    value={subText}
+                    onChange={(e) => setSubText(e.target.value)}
+                    maxLength={28}
+                    placeholder="SELF PHOTO STUDIO"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-xs focus:outline-none focus:border-zinc-800 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Stickers & Date */}
+              <div>
+                <label className="text-[11px] font-bold text-zinc-600 mb-2 block flex items-center justify-between">
+                  <span>PILIH STIKER</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 text-[10px]">
+                    <input
+                      type="checkbox"
+                      checked={showDate}
+                      onChange={(e) => setShowDate(e.target.checked)}
+                      className="rounded text-zinc-900 focus:ring-0"
+                    />
+                    Tampilkan Tanggal
+                  </label>
+                </label>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {STICKERS.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setSticker(s.id)}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1 flex-shrink-0 ${
+                        sticker === s.id
+                          ? 'border-zinc-900 bg-zinc-900 text-white'
+                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                      }`}
+                    >
+                      <span>{s.symbol || '∅'}</span>
+                      <span className="text-[10px]">{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom action bar */}
+            <div className="flex items-center justify-between p-1">
+              <span className="text-xs text-zinc-500 font-mono">
+                Tema aktif: <strong className="text-zinc-800">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
+              </span>
+              <button
+                onClick={() => setActiveTab("studio")}
+                className="px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Selesai & Buka Standby Mode</span>
+              </button>
+            </div>
           </div>
         </div>
       </main>
