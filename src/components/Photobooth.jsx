@@ -136,31 +136,70 @@ export default function Photobooth() {
 
   // Start Camera Helper
   const startCamera = useCallback(async () => {
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      showToast('Kamera butuh akses HTTPS atau localhost 🔒');
+      return;
+    }
+
     try {
       stopCamera();
-      const constraints = {
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
-        },
-        audio: false,
-      };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream;
+      // 1. Try with facingMode and ideal resolution
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 960 },
+          },
+          audio: false,
+        });
+      } catch (e) {
+        // 2. Fallback to basic video constraint (works across all webcams)
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
+
       streamRef.current = stream;
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => {});
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn('Video play error:', playErr);
+        }
       }
+
       setIsCameraActive(true);
+      showToast('Kamera aktif! 📷');
     } catch (err) {
       console.error('Camera error:', err);
-      showToast('Kamera tidak dapat diakses ❌');
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        showToast('Izin kamera ditolak. Aktifkan di browser 🔒');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        showToast('Kamera tidak ditemukan di perangkat 📷');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        showToast('Kamera sedang dipakai aplikasi lain ⚠️');
+      } else {
+        showToast(`Gagal buka kamera: ${err.message || 'Error'} ❌`);
+      }
       setIsCameraActive(false);
     }
   }, [facingMode, stopCamera, showToast]);
+
+  // Ensure video element syncs with active stream
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [isCameraActive]);
 
   // Restart camera when facingMode changes
   useEffect(() => {
@@ -425,15 +464,20 @@ export default function Photobooth() {
 
               {/* Viewfinder Window */}
               <div className="relative aspect-[4/3] rounded-2xl bg-zinc-950 overflow-hidden flex items-center justify-center shadow-inner group">
-                {isCameraActive ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className={`w-full h-full object-cover ${mirrorCamera && facingMode === 'user' ? '-scale-x-100' : ''} ${currentFilterObj.class}`}
-                  />
-                ) : (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  onLoadedMetadata={() => {
+                    videoRef.current?.play().catch(() => {});
+                  }}
+                  className={`w-full h-full object-cover ${mirrorCamera && facingMode === 'user' ? '-scale-x-100' : ''} ${currentFilterObj.class} ${
+                    isCameraActive ? 'block' : 'hidden'
+                  }`}
+                />
+
+                {!isCameraActive && (
                   <div className="text-center p-6 flex flex-col items-center gap-3">
                     <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500">
                       <Camera className="w-8 h-8" />
