@@ -126,6 +126,177 @@ const WashiTape = ({ type = 'grid' }) => {
   );
 };
 
+// ── Theme-Matching Photostrip Ornaments (Rendered on Strip & Saved to Print) ──
+function ThemeStripOrnaments({ type, text, border }) {
+  if (type === 'botanical') {
+    return (
+      <>
+        {/* Top-Right Mini Botanical Flower SVG */}
+        <div className="absolute -top-3.5 -right-3.5 w-10 h-10 pointer-events-none z-30 drop-shadow-xs">
+          <Flower className="w-full h-full text-[#e8b4a0]" />
+        </div>
+        {/* Bottom-Left Mini Botanical Leaf SVG */}
+        <div className="absolute -bottom-3.5 -left-3.5 w-8 h-12 pointer-events-none z-30 transform -rotate-45 drop-shadow-xs">
+          <Leaf className="w-full h-full text-[#5d7255]" />
+        </div>
+      </>
+    );
+  }
+
+  if (type === 'retro70s') {
+    return (
+      <>
+        {/* Top-Right 70s Cassette Tape SVG */}
+        <div className="absolute -top-3.5 -right-2 pointer-events-none z-30 transform rotate-6">
+          <svg className="w-11 h-7 text-amber-800 drop-shadow-xs" viewBox="0 0 48 32" fill="none">
+            <rect x="2" y="2" width="44" height="28" rx="3" stroke="currentColor" strokeWidth="2" fill="#fef3c7" />
+            <rect x="8" y="7" width="32" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" fill="#f59e0b" fillOpacity="0.25" />
+            <circle cx="16" cy="16" r="4" stroke="currentColor" strokeWidth="1.5" fill="#fff" />
+            <circle cx="32" cy="16" r="4" stroke="currentColor" strokeWidth="1.5" fill="#fff" />
+            <line x1="16" y1="20" x2="32" y2="20" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </div>
+        {/* Bottom-Left 70s Sun Arc SVG */}
+        <div className="absolute -bottom-3 -left-3 pointer-events-none z-30">
+          <svg className="w-9 h-9" viewBox="0 0 32 32" fill="none">
+            <path d="M4 28 A12 12 0 0 1 28 28" stroke="#d97706" strokeWidth="3" strokeLinecap="round" />
+            <path d="M8 28 A8 8 0 0 1 24 28" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M12 28 A4 4 0 0 1 20 28" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+      </>
+    );
+  }
+
+  if (type === 'polaroid') {
+    return (
+      <>
+        {/* Top-Left Vintage Paper Clip SVG */}
+        <div className="absolute -top-3.5 left-4 pointer-events-none z-30 transform -rotate-12">
+          <svg className="w-5 h-8 text-zinc-500 drop-shadow-xs" viewBox="0 0 20 32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M6 10 V24 A4 4 0 0 0 14 24 V6 A4 4 0 0 0 6 6 V20 A2 2 0 0 0 10 20 V10" />
+          </svg>
+        </div>
+        {/* Bottom-Right Vintage Postage Stamp Lines */}
+        <div className="absolute bottom-2 right-2 pointer-events-none z-30 opacity-40">
+          <svg className="w-10 h-6 text-zinc-600" viewBox="0 0 50 30" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M0 8 Q12 2 25 8 T50 8" />
+            <path d="M0 15 Q12 9 25 15 T50 15" />
+            <path d="M0 22 Q12 16 25 22 T50 22" />
+          </svg>
+        </div>
+      </>
+    );
+  }
+
+  if (type === 'filmroll') {
+    return (
+      <>
+        {/* Top-Right 35mm Canister SVG */}
+        <div className="absolute -top-3 -right-2 pointer-events-none z-30 transform rotate-12">
+          <svg className="w-9 h-7 text-amber-200 drop-shadow-sm" viewBox="0 0 36 28" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="2" y="4" width="26" height="20" rx="3" fill="#1c1917" stroke="#d97706" />
+            <rect x="28" y="8" width="6" height="12" rx="1" fill="#f59e0b" stroke="#d97706" />
+            <circle cx="15" cy="14" r="5" stroke="#f59e0b" />
+          </svg>
+        </div>
+        {/* Side Sprocket Holes */}
+        <div className="absolute left-1 top-8 bottom-16 flex flex-col justify-around pointer-events-none opacity-30 z-20">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <span key={i} className="w-1.5 h-2.5 border border-amber-200/60 rounded-xs" />
+          ))}
+        </div>
+        <div className="absolute right-1 top-8 bottom-16 flex flex-col justify-around pointer-events-none opacity-30 z-20">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <span key={i} className="w-1.5 h-2.5 border border-amber-200/60 rounded-xs" />
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  if (type === 'cyber') {
+    return (
+      <>
+        {/* 4 Cyber HUD Corner Brackets */}
+        <svg className="w-5 h-5 text-cyan-400 absolute top-2 left-2 pointer-events-none z-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M3 9V3h6" />
+        </svg>
+        <svg className="w-5 h-5 text-cyan-400 absolute top-2 right-2 pointer-events-none z-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M21 9V3h-6" />
+        </svg>
+        <svg className="w-5 h-5 text-purple-400 absolute bottom-2 left-2 pointer-events-none z-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M3 15v6h6" />
+        </svg>
+        <svg className="w-5 h-5 text-purple-400 absolute bottom-2 right-2 pointer-events-none z-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M21 15v6h-6" />
+        </svg>
+        {/* Cyber Crosshair HUD */}
+        <div className="absolute -top-3.5 right-6 pointer-events-none z-30">
+          <svg className="w-6 h-6 text-cyan-400/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="7" />
+            <line x1="12" y1="2" x2="12" y2="7" />
+            <line x1="12" y1="17" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="7" y2="12" />
+            <line x1="17" y1="12" x2="22" y2="12" />
+          </svg>
+        </div>
+      </>
+    );
+  }
+
+  if (type === 'tech') {
+    return (
+      <>
+        {/* Top-Right Microchip SVG */}
+        <div className="absolute -top-3 -right-2 pointer-events-none z-30">
+          <svg className="w-7 h-7 text-slate-700 drop-shadow-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="4" y="4" width="16" height="16" rx="2" fill="#cbd5e1" />
+            <rect x="8" y="8" width="8" height="8" fill="#475569" />
+            <line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" />
+            <line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" />
+            <line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="15" x2="4" y2="15" />
+            <line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="15" x2="23" y2="15" />
+          </svg>
+        </div>
+        {/* Precision Crosshair Target */}
+        <div className="absolute top-2 left-2 pointer-events-none z-30 opacity-60">
+          <svg className="w-4 h-4 text-slate-700" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="8" cy="8" r="5" />
+            <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+          </svg>
+        </div>
+      </>
+    );
+  }
+
+  if (type === 'y2k') {
+    return (
+      <>
+        {/* Top-Right Cute Cherries SVG */}
+        <div className="absolute -top-4 -right-3 pointer-events-none z-30 transform rotate-12 drop-shadow-xs">
+          <svg className="w-9 h-9" viewBox="0 0 32 32" fill="none">
+            <path d="M12 8 C16 4 22 6 24 10" stroke="#15803d" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M12 8 C10 12 8 16 9 20" stroke="#15803d" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="10" cy="22" r="5.5" fill="#e11d48" />
+            <circle cx="21" cy="20" r="5" fill="#be123c" />
+            <circle cx="8.5" cy="20" r="1.5" fill="#fff" opacity="0.8" />
+            <circle cx="19.5" cy="18.5" r="1.5" fill="#fff" opacity="0.8" />
+          </svg>
+        </div>
+        {/* Cute Sparkle Star */}
+        <div className="absolute -bottom-2 -left-2 pointer-events-none z-30">
+          <svg className="w-6 h-6 text-pink-400" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" />
+          </svg>
+        </div>
+      </>
+    );
+  }
+
+  return null;
+}
+
 // ── PAKET TEMPLATE (Presets - Clean, Vintage/Retro, & Modern/Futuristic) ──
 const TEMPLATE_PACKAGES = [
   // 1. Botanical
@@ -1144,6 +1315,9 @@ export default function Photobooth() {
                   ornamentType === 'cyber' ? 'shadow-[0_0_20px_rgba(6,182,212,0.25)]' : ''
                 }`}
               >
+                {/* Theme-Matching Decorative SVGs */}
+                <ThemeStripOrnaments type={ornamentType} text={frameText} border={frameBorder} />
+
                 {/* Photostrip Frames */}
                 {layout === 'grid-4' ? (
                   <div className="grid grid-cols-2 gap-3 w-full relative">
