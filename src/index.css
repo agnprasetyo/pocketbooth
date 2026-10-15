@@ -11,67 +11,117 @@
     filter: grayscale(100%) contrast(125%) brightness(105%);
   }
   .filter-vintage {
-    filter: sepia(35%) contrast(108%) brightness(95%) saturate(115%);
+    filter: sepia(45%) contrast(110%) brightness(95%) saturate(120%);
+  }
+  .filter-retro70s {
+    filter: sepia(35%) contrast(120%) brightness(102%) saturate(145%) hue-rotate(-10deg);
+  }
+  .filter-cyber {
+    filter: contrast(125%) brightness(105%) saturate(120%) hue-rotate(165deg);
+  }
+  .filter-silver {
+    filter: grayscale(85%) contrast(130%) brightness(108%);
   }
   .filter-soft {
     filter: contrast(95%) brightness(108%) saturate(90%);
   }
+  .filter-film {
+    filter: contrast(115%) saturate(85%) brightness(100%) sepia(20%);
+  }
   .filter-cool {
     filter: hue-rotate(185deg) saturate(75%) contrast(110%) brightness(102%);
   }
-  .filter-film {
-    filter: contrast(115%) saturate(85%) brightness(100%) sepia(15%);
-  }
 }
 
-/* Background floating animations */
-@keyframes blobFloat1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(25px, 20px) scale(1.08); }
+/* ── Decorative Background SVGs ── */
+.deco {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
 }
-@keyframes blobFloat2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-20px, -25px) scale(1.06); }
+
+/* Leaves */
+.deco-leaf {
+  color: #b5c9a8;
 }
-@keyframes blobFloat3 {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-45%, -55%) scale(1.12); }
+.deco-leaf--tl {
+  width: 90px;
+  top: -20px;
+  left: -15px;
+  transform: rotate(20deg);
+  animation: leafSway 6s ease-in-out infinite alternate;
+}
+.deco-leaf--br {
+  width: 80px;
+  bottom: -10px;
+  right: -10px;
+  transform: rotate(-160deg);
+  animation: leafSway 8s ease-in-out infinite alternate-reverse;
 }
 
 @keyframes leafSway {
-  0%, 100% { transform: rotate(16deg); }
-  50% { transform: rotate(26deg); }
+  from { transform: rotate(20deg); }
+  to   { transform: rotate(26deg); }
 }
-@keyframes leafSwayRev {
-  0%, 100% { transform: rotate(-165deg); }
-  50% { transform: rotate(-155deg); }
+
+/* Flowers */
+.deco-flower {
+  color: #e8b4a0;
+}
+.deco-flower--tr {
+  width: 70px;
+  top: 60px;
+  right: 10px;
+  animation: flowerSpin 20s linear infinite;
+}
+.deco-flower--bl {
+  width: 55px;
+  bottom: 80px;
+  left: 10px;
+  animation: flowerSpin 25s linear infinite reverse;
 }
 
 @keyframes flowerSpin {
   from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  to   { transform: rotate(360deg); }
 }
 
-.animate-blob-1 {
-  animation: blobFloat1 10s ease-in-out infinite alternate;
+/* Floating Blobs */
+.deco-blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
 }
-.animate-blob-2 {
-  animation: blobFloat2 12s ease-in-out infinite alternate;
+.deco-blob--1 {
+  width: 280px;
+  height: 280px;
+  background: rgba(224, 185, 162, 0.35);
+  top: -60px;
+  right: -60px;
+  animation: blobFloat 8s ease-in-out infinite alternate;
 }
-.animate-blob-3 {
-  animation: blobFloat3 9s ease-in-out infinite alternate;
+.deco-blob--2 {
+  width: 220px;
+  height: 220px;
+  background: rgba(181, 201, 168, 0.3);
+  bottom: 40px;
+  left: -70px;
+  animation: blobFloat 10s ease-in-out infinite alternate-reverse;
 }
-.animate-leaf {
-  animation: leafSway 7s ease-in-out infinite alternate;
+.deco-blob--3 {
+  width: 160px;
+  height: 160px;
+  background: rgba(240, 168, 150, 0.25);
+  top: 50%;
+  left: 50%;
+  animation: blobFloat 7s ease-in-out infinite alternate;
 }
-.animate-leaf-rev {
-  animation: leafSwayRev 9s ease-in-out infinite alternate;
-}
-.animate-flower {
-  animation: flowerSpin 28s linear infinite;
-}
-.animate-flower-rev {
-  animation: flowerSpin 32s linear infinite reverse;
+
+@keyframes blobFloat {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(20px, 20px) scale(1.08); }
 }
 
 body {

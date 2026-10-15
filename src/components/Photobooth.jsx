@@ -10,27 +10,23 @@ import {
   Timer,
   Sparkles,
   RotateCcw,
-  Palette,
   LayoutGrid,
   Check,
   Sliders,
   Zap,
   Box,
-  Heart,
-  Star,
-  Film,
 } from 'lucide-react';
 import { savePhoto, getAllPhotos, deletePhoto, clearAllPhotos } from '../db/photoDb';
 import { playCountdownBeep, playShutterSound } from '../utils/audio';
 
-// ── Background Ambient SVGs ──
+// ── Background Ambient SVGs (Requested exact paths & classes) ──
 const Leaf = ({ className }) => (
   <svg className={className} viewBox="0 0 80 120" xmlns="http://www.w3.org/2000/svg">
-    <path d="M40 0 C10 30, 0 60, 10 90 C20 110, 40 120, 40 120 C40 120, 60 110, 70 90 C80 60, 70 30, 40 0Z" fill="currentColor" opacity="0.6"/>
-    <line x1="40" y1="10" x2="40" y2="115" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/>
-    <line x1="40" y1="40" x2="22" y2="60" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
-    <line x1="40" y1="55" x2="58" y2="70" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
-    <line x1="40" y1="70" x2="20" y2="85" stroke="rgba(255,255,255,0.4)" strokeWidth="1"/>
+    <path d="M40 0 C10 30, 0 60, 10 90 C20 110, 40 120, 40 120 C40 120, 60 110, 70 90 C80 60, 70 30, 40 0Z" fill="currentColor" opacity="0.55" />
+    <line x1="40" y1="10" x2="40" y2="115" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+    <line x1="40" y1="40" x2="22" y2="60" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+    <line x1="40" y1="55" x2="58" y2="70" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+    <line x1="40" y1="70" x2="20" y2="85" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
   </svg>
 );
 
@@ -45,7 +41,7 @@ const Flower = ({ className }) => (
   </svg>
 );
 
-// ── Photostrip Decorative SVGs ──
+// ── Photostrip Decorative Ornaments ──
 const LeafStem1 = () => (
   <svg className="w-8 h-16 drop-shadow-xs" viewBox="0 0 40 80" xmlns="http://www.w3.org/2000/svg">
     <path d="M10,75 Q20,40 15,10" fill="none" stroke="#5d7255" strokeWidth="2.5" strokeLinecap="round" />
@@ -78,7 +74,7 @@ const HeartHandDrawn = ({ color = "#5d7255", width = 18, height = 18 }) => (
   </svg>
 );
 
-// Washi Tape Component
+// ── Washi Tape Component with Vintage & Futuristic variants ──
 const WashiTape = ({ type = 'grid' }) => {
   if (type === 'none') return null;
 
@@ -104,6 +100,19 @@ const WashiTape = ({ type = 'grid' }) => {
     };
   } else if (type === 'kraft') {
     extraClass = 'bg-[#dfbe9f]/90 border-[#c49f7e]/50';
+  } else if (type === 'retro') {
+    extraClass = 'bg-amber-100 border-amber-300/80';
+    patternStyle = {
+      backgroundImage: 'repeating-linear-gradient(90deg, #d97706 0px, #d97706 4px, #f59e0b 4px, #f59e0b 8px, #78350f 8px, #78350f 12px)',
+    };
+  } else if (type === 'cyber') {
+    extraClass = 'bg-zinc-950/90 border-cyan-400/80 shadow-[0_0_8px_rgba(6,182,212,0.4)]';
+    patternStyle = {
+      backgroundImage: 'linear-gradient(to right, rgba(34,211,238,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(34,211,238,0.3) 1px, transparent 1px)',
+      backgroundSize: '4px 4px',
+    };
+  } else if (type === 'chrome') {
+    extraClass = 'bg-gradient-to-r from-slate-300 via-white to-slate-400 border-slate-300 shadow-xs';
   }
 
   return (
@@ -117,13 +126,14 @@ const WashiTape = ({ type = 'grid' }) => {
   );
 };
 
-// ── PAKET TEMPLATE (Presets) ──
+// ── PAKET TEMPLATE (Presets - Clean, Vintage/Retro, & Modern/Futuristic) ──
 const TEMPLATE_PACKAGES = [
+  // 1. Botanical
   {
     id: 'botanical',
     name: 'Matcha Botanical',
     subtitle: 'Aesthetic Earthy & Washi',
-    badge: '🌿 Popular',
+    badge: '🌿 Natural',
     bg: '#9fb8ad',
     text: '#2d4234',
     subtext: '#44614e',
@@ -133,31 +143,105 @@ const TEMPLATE_PACKAGES = [
     ornament: 'botanical',
     defaultFilter: 'soft',
     defaultTitle: 'BOTANICAL MEMORY',
-    defaultSubtext: 'POCKETBOOTH STUDIO',
+    defaultSubtext: 'SELF PHOTO STUDIO',
     defaultSticker: 'heart',
   },
+  // 2. Vintage 70s
   {
-    id: 'haru',
-    name: 'Haru Sky (하루필름)',
-    subtitle: 'Signature Korean Sky Blue',
-    badge: '☁️ Iconic',
-    bg: '#e0f2fe',
-    text: '#0369a1',
-    subtext: '#0284c7',
-    border: '#bae6fd',
-    accent: '#f0f9ff',
-    washi: 'striped',
-    ornament: 'haru',
-    defaultFilter: 'cool',
-    defaultTitle: 'HARU FILM',
-    defaultSubtext: 'LIFE 4 CUTS • 하루',
+    id: 'retro-70s',
+    name: 'Retro 70s Analog',
+    subtitle: 'Warm Amber & Cassette Tape',
+    badge: '📻 70s Retro',
+    bg: '#fef3c7',
+    text: '#78350f',
+    subtext: '#92400e',
+    border: '#f59e0b',
+    accent: '#fffbeb',
+    washi: 'retro',
+    ornament: 'retro70s',
+    defaultFilter: 'retro70s',
+    defaultTitle: 'RETRO 1978',
+    defaultSubtext: 'ANALOG CASSETTE TAPE',
+    defaultSticker: 'sparkle',
+  },
+  // 3. Vintage Polaroid
+  {
+    id: 'polaroid',
+    name: 'Vintage Polaroid',
+    subtitle: 'Classic Cream Paper Film',
+    badge: '🎞️ Polaroid',
+    bg: '#faf7f2',
+    text: '#3f3f46',
+    subtext: '#71717a',
+    border: '#e4e4e7',
+    accent: '#f4f4f5',
+    washi: 'kraft',
+    ornament: 'polaroid',
+    defaultFilter: 'vintage',
+    defaultTitle: 'POLAROID 90s',
+    defaultSubtext: 'ORIGINAL INSTANT PRINT',
+    defaultSticker: 'camera',
+  },
+  // 4. 35mm Film Roll
+  {
+    id: 'film-roll',
+    name: '35mm Film Roll',
+    subtitle: 'Dark Sepia Film Negative',
+    badge: '📷 Film Roll',
+    bg: '#2b211b',
+    text: '#fef3c7',
+    subtext: '#d97706',
+    border: '#45352c',
+    accent: '#382b23',
+    washi: 'kraft',
+    ornament: 'filmroll',
+    defaultFilter: 'film',
+    defaultTitle: 'KODAK 400',
+    defaultSubtext: '35MM ANALOG NEGATIVE',
+    defaultSticker: 'film',
+  },
+  // 5. Cyber Neon 2077 (Futuristic)
+  {
+    id: 'cyberpunk',
+    name: 'Cyber Neon 2077',
+    subtitle: 'Obsidian & Electric Cyan',
+    badge: '⚡ Cyberpunk',
+    bg: '#09090b',
+    text: '#22d3ee',
+    subtext: '#a855f7',
+    border: '#06b6d4',
+    accent: '#18181b',
+    washi: 'cyber',
+    ornament: 'cyber',
+    defaultFilter: 'cyber',
+    defaultTitle: 'CYBER//2077',
+    defaultSubtext: 'SYS.GRID • NEON MATRIX',
     defaultSticker: 'star',
   },
+  // 6. Silver Titanium (Modern Chrome)
   {
-    id: 'life4cuts',
-    name: 'Life4Cuts Classic',
-    subtitle: '인생네컷 Minimal Noir',
-    badge: '🖤 Classic',
+    id: 'silver-chrome',
+    name: 'Silver Titanium',
+    subtitle: 'Futuristic Metallic Chrome',
+    badge: '💿 Chrome',
+    bg: '#e2e8f0',
+    text: '#0f172a',
+    subtext: '#475569',
+    border: '#cbd5e1',
+    accent: '#f1f5f9',
+    washi: 'chrome',
+    ornament: 'tech',
+    defaultFilter: 'silver',
+    defaultTitle: 'TITANIUM LAB',
+    defaultSubtext: 'MODERN TECH SPEC.01',
+    defaultSticker: 'sparkle',
+  },
+  // 7. Classic Noir
+  {
+    id: 'classic-noir',
+    name: 'Classic Noir',
+    subtitle: 'High-Contrast Studio B&W',
+    badge: '🖤 Noir',
     bg: '#18181b',
     text: '#fafafa',
     subtext: '#a1a1aa',
@@ -166,15 +250,34 @@ const TEMPLATE_PACKAGES = [
     washi: 'striped',
     ornament: 'minimal',
     defaultFilter: 'bw',
-    defaultTitle: '인생네컷',
-    defaultSubtext: 'LIFE 4 CUTS STUDIO',
+    defaultTitle: 'CLASSIC NOIR',
+    defaultSubtext: 'MONOCHROME STUDIO',
     defaultSticker: 'film',
   },
+  // 8. Sky Minimalist
+  {
+    id: 'sky-minimal',
+    name: 'Sky Blue Pastel',
+    subtitle: 'Clean Pastel Sky & Clouds',
+    badge: '☁️ Sky Blue',
+    bg: '#e0f2fe',
+    text: '#0369a1',
+    subtext: '#0284c7',
+    border: '#bae6fd',
+    accent: '#f0f9ff',
+    washi: 'striped',
+    ornament: 'minimal',
+    defaultFilter: 'cool',
+    defaultTitle: 'SKY BLUE STUDIO',
+    defaultSubtext: 'PHOTOBOOTH MEMORY',
+    defaultSticker: 'star',
+  },
+  // 9. Cherry Pop
   {
     id: 'cherry',
     name: 'Cherry Pop Y2K',
-    subtitle: 'Sweet Strawberry Pink',
-    badge: '🍒 Cute',
+    subtitle: 'Sweet Berry Pink & Hearts',
+    badge: '🍒 Sweet',
     bg: '#fce7f3',
     text: '#831843',
     subtext: '#be185d',
@@ -187,40 +290,7 @@ const TEMPLATE_PACKAGES = [
     defaultSubtext: 'SWEETEST MOMENTS',
     defaultSticker: 'cherry',
   },
-  {
-    id: 'vintage',
-    name: 'Vintage 90s Film',
-    subtitle: 'Analog Kraft & Warm Paper',
-    badge: '🎞️ Retro',
-    bg: '#fef3c7',
-    text: '#78350f',
-    subtext: '#92400e',
-    border: '#fde68a',
-    accent: '#fffbeb',
-    washi: 'kraft',
-    ornament: 'vintage',
-    defaultFilter: 'film',
-    defaultTitle: "MEMORIES '98",
-    defaultSubtext: 'ANALOG PHOTOBOOTH',
-    defaultSticker: 'sparkle',
-  },
-  {
-    id: 'lilac',
-    name: 'Lilac Dream (라일락)',
-    subtitle: 'Soft Purple Pastel & Bow',
-    badge: '🎀 Dreamy',
-    bg: '#f3e8ff',
-    text: '#581c87',
-    subtext: '#7e22ce',
-    border: '#e9d5ff',
-    accent: '#faf5ff',
-    washi: 'grid',
-    ornament: 'lilac',
-    defaultFilter: 'soft',
-    defaultTitle: 'LILAC DREAM',
-    defaultSubtext: 'SELF PHOTO STUDIO',
-    defaultSticker: 'ribbon',
-  },
+  // 10. Snow White Studio
   {
     id: 'minimal-white',
     name: 'Snow White',
@@ -235,29 +305,32 @@ const TEMPLATE_PACKAGES = [
     ornament: 'none',
     defaultFilter: 'normal',
     defaultTitle: 'POCKETBOOTH',
-    defaultSubtext: 'PHOTO STUDIO',
+    defaultSubtext: 'INSTANT PHOTO STUDIO',
     defaultSticker: 'none',
   },
 ];
 
 // Layout Options
 const LAYOUTS = [
-  { id: 'strip-4', label: '4-Cuts Strip', slots: 4, desc: 'Classic vertical Korean photostrip' },
+  { id: 'strip-4', label: '4-Cuts Strip', slots: 4, desc: 'Classic vertical photostrip' },
   { id: 'strip-3', label: '3-Cuts Strip', slots: 3, desc: '3-photo vertical strip' },
-  { id: 'grid-4', label: '2x2 Grid', slots: 4, desc: 'Photoism quad grid layout' },
+  { id: 'grid-4', label: '2x2 Grid', slots: 4, desc: 'Quad 2x2 grid layout' },
 ];
 
-// Filters
+// Aesthetic Photo Filters
 const FILTERS = [
   { id: 'normal', name: 'Original', class: 'filter-normal', preview: 'bg-zinc-200' },
   { id: 'bw', name: 'Monochrome', class: 'filter-bw', preview: 'bg-zinc-800' },
-  { id: 'vintage', name: 'Vintage 90s', class: 'filter-vintage', preview: 'bg-amber-700' },
-  { id: 'soft', name: 'Haru Soft', class: 'filter-soft', preview: 'bg-rose-300' },
-  { id: 'film', name: 'Retro Film', class: 'filter-film', preview: 'bg-emerald-700' },
-  { id: 'cool', name: 'Cool Tone', class: 'filter-cool', preview: 'bg-cyan-700' },
+  { id: 'retro70s', name: 'Retro 70s', class: 'filter-retro70s', preview: 'bg-amber-600' },
+  { id: 'vintage', name: 'Polaroid 90s', class: 'filter-vintage', preview: 'bg-yellow-700' },
+  { id: 'film', name: '35mm Film', class: 'filter-film', preview: 'bg-stone-700' },
+  { id: 'cyber', name: 'Cyber Neon', class: 'filter-cyber', preview: 'bg-cyan-500' },
+  { id: 'silver', name: 'Chrome Silver', class: 'filter-silver', preview: 'bg-slate-400' },
+  { id: 'soft', name: 'Soft Warm', class: 'filter-soft', preview: 'bg-rose-300' },
+  { id: 'cool', name: 'Cool Tone', class: 'filter-cool', preview: 'bg-sky-600' },
 ];
 
-// Stickers
+// Decorative Stickers
 const STICKERS = [
   { id: 'none', label: 'None', symbol: '' },
   { id: 'heart', label: 'Heart', symbol: '♡' },
@@ -277,7 +350,7 @@ export default function Photobooth() {
   const [layout, setLayout] = useState('strip-4');
   const [filter, setFilter] = useState('soft');
   const [titleText, setTitleText] = useState('BOTANICAL MEMORY');
-  const [subText, setSubText] = useState('POCKETBOOTH STUDIO');
+  const [subText, setSubText] = useState('SELF PHOTO STUDIO');
   const [sticker, setSticker] = useState('heart');
   const [showDate, setShowDate] = useState(true);
 
@@ -617,7 +690,7 @@ export default function Photobooth() {
   return (
     <div className="min-h-screen bg-[#f5ede2] text-zinc-900 pb-20 relative overflow-hidden selection:bg-rose-200">
 
-      {/* ── Background Organic Decorations (Aesthetic earthy vibe) ── */}
+      {/* ── Background Organic Decorations ── */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
@@ -630,15 +703,15 @@ export default function Photobooth() {
       />
 
       {/* Floating Blobs */}
-      <div className="fixed -top-16 -right-16 w-80 h-80 rounded-full bg-[#e0b9a2]/40 blur-3xl pointer-events-none animate-blob-1" />
-      <div className="fixed -bottom-16 -left-16 w-72 h-72 rounded-full bg-[#b5c9a8]/35 blur-3xl pointer-events-none animate-blob-2" />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-[#f0a896]/20 blur-3xl pointer-events-none animate-blob-3" />
+      <div className="deco-blob deco-blob--1" />
+      <div className="deco-blob deco-blob--2" />
+      <div className="deco-blob deco-blob--3" />
 
-      {/* Floating Leaves & Flowers */}
-      <Leaf className="fixed top-2 -left-4 text-[#b5c9a8] w-24 pointer-events-none z-0 animate-leaf opacity-70" />
-      <Leaf className="fixed bottom-4 -right-4 text-[#b5c9a8] w-24 pointer-events-none z-0 animate-leaf-rev opacity-70" />
-      <Flower className="fixed top-24 right-4 text-[#e8b4a0] w-14 pointer-events-none z-0 animate-flower opacity-75" />
-      <Flower className="fixed bottom-28 left-4 text-[#e8b4a0] w-12 pointer-events-none z-0 animate-flower-rev opacity-75" />
+      {/* Floating Leaves & Flowers (Exact SVGs requested) */}
+      <Leaf className="deco deco-leaf deco-leaf--tl" />
+      <Leaf className="deco deco-leaf deco-leaf--br" />
+      <Flower className="deco deco-flower deco-flower--tr" />
+      <Flower className="deco deco-flower deco-flower--bl" />
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -664,10 +737,10 @@ export default function Photobooth() {
               <div className="flex items-center gap-2">
                 <h1 className="font-bold text-base tracking-tight font-sans text-zinc-800">POCKETBOOTH</h1>
                 <span className="text-[10px] font-mono tracking-widest bg-amber-100/70 text-amber-900 px-1.5 py-0.5 rounded font-semibold border border-amber-200/60">
-                  포켓부스
+                  STUDIO
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500 font-mono tracking-tight -mt-0.5">Korean Self Photo Studio</p>
+              <p className="text-[11px] text-zinc-500 font-mono tracking-tight -mt-0.5">Self Photo Booth Studio</p>
             </div>
           </div>
 
@@ -700,16 +773,16 @@ export default function Photobooth() {
               <Box className="w-4 h-4 text-emerald-700" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">PILIH PAKET TEMPLATE</h2>
             </div>
-            <span className="text-[11px] text-zinc-500 font-mono">1-Klik langsung estetik</span>
+            <span className="text-[11px] text-zinc-500 font-mono">Vintage, Retro, Modern & Futuristic</span>
           </div>
 
           {/* Template Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
             {TEMPLATE_PACKAGES.map((pkg) => (
               <button
                 key={pkg.id}
                 onClick={() => applyTemplate(pkg)}
-                className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group ${
+                className={`p-2 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group ${
                   selectedTemplate === pkg.id
                     ? 'border-zinc-800 ring-2 ring-zinc-800/15 shadow-md bg-white'
                     : 'border-zinc-200/80 bg-white/60 hover:bg-white text-zinc-700 hover:shadow-xs'
@@ -722,14 +795,14 @@ export default function Photobooth() {
                   >
                     {selectedTemplate === pkg.id && <Check className="w-3 h-3 text-white drop-shadow-xs" />}
                   </span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700">
+                  <span className="text-[8px] font-bold px-1 py-0.5 rounded-full bg-zinc-100 text-zinc-700 truncate max-w-[50px]">
                     {pkg.badge.split(' ')[0]}
                   </span>
                 </div>
 
                 <div>
-                  <p className="font-bold text-xs text-zinc-900 leading-tight truncate">{pkg.name}</p>
-                  <p className="text-[10px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
+                  <p className="font-bold text-[11px] text-zinc-900 leading-tight truncate">{pkg.name}</p>
+                  <p className="text-[9px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
                 </div>
               </button>
             ))}
@@ -861,11 +934,11 @@ export default function Photobooth() {
                 <button
                   onClick={handleAutoSeries}
                   disabled={isAutoShooting}
-                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white font-bold text-xs tracking-wide shadow-md transition flex items-center justify-center gap-2 group disabled:opacity-50"
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-600 via-rose-500 to-indigo-600 hover:opacity-95 text-white font-bold text-xs tracking-wide shadow-md transition flex items-center justify-center gap-2 group disabled:opacity-50"
                   title="Ambil foto otomatis berurutan sesuai layout"
                 >
                   <Zap className="w-4 h-4 fill-current group-hover:scale-110 transition" />
-                  <span>{isAutoShooting ? 'MEMOTRET...' : 'AUTO 4-CUTS'}</span>
+                  <span>{isAutoShooting ? 'MEMOTRET...' : 'AUTO SERIES'}</span>
                 </button>
 
                 {/* Primary Shutter */}
@@ -919,7 +992,7 @@ export default function Photobooth() {
               </div>
             </div>
 
-            {/* Customization Details (Accordion/Tabs) */}
+            {/* Customization Details */}
             <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 flex flex-col gap-5">
 
               {/* 1. Layout Mode */}
@@ -958,9 +1031,9 @@ export default function Photobooth() {
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5" />
-                  FILTER FOTO ESTETIK
+                  FILTER FOTO
                 </label>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {FILTERS.map((f) => (
                     <button
                       key={f.id}
@@ -978,7 +1051,7 @@ export default function Photobooth() {
                 </div>
               </div>
 
-              {/* 3. Text & Stickers */}
+              {/* 3. Text Customization */}
               <div className="pt-2 border-t border-amber-200/50 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="text-[11px] font-bold text-zinc-600 mb-1 block">JUDUL STRIP</label>
@@ -986,7 +1059,7 @@ export default function Photobooth() {
                     type="text"
                     value={titleText}
                     onChange={(e) => setTitleText(e.target.value.toUpperCase())}
-                    maxLength={20}
+                    maxLength={22}
                     placeholder="POCKETBOOTH"
                     className="w-full px-3 py-2 rounded-xl border border-zinc-200 font-mono text-xs focus:outline-none focus:border-zinc-800 bg-white"
                   />
@@ -998,16 +1071,16 @@ export default function Photobooth() {
                     value={subText}
                     onChange={(e) => setSubText(e.target.value)}
                     maxLength={28}
-                    placeholder="LIFE 4 CUTS STUDIO"
+                    placeholder="SELF PHOTO STUDIO"
                     className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-xs focus:outline-none focus:border-zinc-800 bg-white"
                   />
                 </div>
               </div>
 
-              {/* 4. Korean Sticker & Date */}
+              {/* 4. Stickers & Date */}
               <div>
                 <label className="text-[11px] font-bold text-zinc-600 mb-2 block flex items-center justify-between">
-                  <span>IKON STIKER KOREA</span>
+                  <span>PILIH STIKER</span>
                   <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 text-[10px]">
                     <input
                       type="checkbox"
@@ -1067,9 +1140,11 @@ export default function Photobooth() {
                 }}
                 className={`relative transition-colors duration-200 shadow-2xl rounded-2xl p-4 sm:p-5 flex flex-col items-center border ${
                   layout === 'grid-4' ? 'w-[330px]' : 'w-[275px]'
+                } ${
+                  ornamentType === 'cyber' ? 'shadow-[0_0_20px_rgba(6,182,212,0.25)]' : ''
                 }`}
               >
-                {/* Photostrip Frames with Washi & Doodles */}
+                {/* Photostrip Frames */}
                 {layout === 'grid-4' ? (
                   <div className="grid grid-cols-2 gap-3 w-full relative">
                     {Array.from({ length: 4 }).map((_, idx) => (
@@ -1107,7 +1182,7 @@ export default function Photobooth() {
                           aspect="aspect-[4/3]"
                         />
 
-                        {/* Botanical Doodles for Botanical Theme */}
+                        {/* Botanical Doodles */}
                         {ornamentType === 'botanical' && idx === 0 && (
                           <div className="absolute -left-3.5 -bottom-5 pointer-events-none z-20">
                             <LeafStem1 />
@@ -1121,6 +1196,30 @@ export default function Photobooth() {
                         {ornamentType === 'botanical' && idx === totalSlots - 1 && (
                           <div className="absolute -right-2 -bottom-2 pointer-events-none z-20">
                             <HeartHandDrawn color="#5d7255" width={16} height={16} />
+                          </div>
+                        )}
+
+                        {/* Retro 70s Color Bars */}
+                        {ornamentType === 'retro70s' && idx === 0 && (
+                          <div className="absolute -left-2 top-2 flex flex-col gap-0.5 z-20 pointer-events-none">
+                            <span className="w-1.5 h-3 bg-amber-600 rounded-xs" />
+                            <span className="w-1.5 h-3 bg-amber-500 rounded-xs" />
+                            <span className="w-1.5 h-3 bg-yellow-400 rounded-xs" />
+                          </div>
+                        )}
+
+                        {/* 35mm Film Sprocket Accent */}
+                        {ornamentType === 'filmroll' && (
+                          <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-20 pointer-events-none opacity-40">
+                            <span className="w-1.5 h-1.5 bg-amber-100 rounded-xs" />
+                            <span className="w-1.5 h-1.5 bg-amber-100 rounded-xs" />
+                          </div>
+                        )}
+
+                        {/* Cyber Coordinates Accent */}
+                        {ornamentType === 'cyber' && idx === 0 && (
+                          <div className="absolute -left-1 -bottom-2 font-mono text-[8px] text-cyan-400/80 z-20 pointer-events-none tracking-tighter">
+                            [ + ] REC.01
                           </div>
                         )}
                       </div>
@@ -1144,7 +1243,7 @@ export default function Photobooth() {
                   </div>
 
                   {subText && (
-                    <div className="text-[9px] tracking-wider uppercase font-medium leading-tight opacity-80">
+                    <div className="text-[9px] tracking-wider uppercase font-medium leading-tight opacity-80 font-mono">
                       {subText}
                     </div>
                   )}
@@ -1155,10 +1254,16 @@ export default function Photobooth() {
                     </div>
                   )}
 
-                  {/* Aesthetic Barcode Line */}
-                  <div className="mt-2 text-[7px] font-mono tracking-[0.25em] opacity-45 select-none">
-                    |||| || ||| || ||||| | ||
-                  </div>
+                  {/* Decorative Barcode / Tech Stamp */}
+                  {ornamentType === 'cyber' ? (
+                    <div className="mt-2 text-[7px] font-mono tracking-[0.2em] text-cyan-400/90 select-none">
+                      SYS//04.X-CORE // 2077
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-[7px] font-mono tracking-[0.25em] opacity-45 select-none">
+                      |||| || ||| || ||||| | ||
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
