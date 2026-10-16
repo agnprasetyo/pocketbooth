@@ -20,8 +20,6 @@ import {
   Sun,
   Moon,
   Heart,
-  QrCode,
-  Copy,
   X,
 } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -1077,26 +1075,6 @@ export default function Photobooth() {
     }
   };
 
-  // Copy QRIS String
-  const handleCopyQris = async () => {
-    try {
-      await navigator.clipboard.writeText(STATIC_QRIS_STRING);
-      showToast('String QRIS berhasil disalin! 📋');
-    } catch {
-      showToast('Gagal menyalin string QRIS');
-    }
-  };
-
-  // Download QRIS PNG to phone gallery
-  const handleDownloadQris = () => {
-    if (!qrisDataUrl) return;
-    const a = document.createElement('a');
-    a.download = 'qris-pocketbooth-gerai-digital.png';
-    a.href = qrisDataUrl;
-    a.click();
-    showToast('Gambar QRIS berhasil diunduh! 💳');
-  };
-
   const todayFormatted = (() => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -1143,53 +1121,54 @@ export default function Photobooth() {
 
       {/* Header */}
       <header className="border-b border-amber-200/50 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/70 backdrop-blur-md sticky top-0 z-40 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <img
               src="/logo.png"
               alt="Pocket Photo Booth Logo"
-              className="w-9 h-9 object-contain rounded-xl shadow-xs"
+              className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-xl shadow-xs flex-shrink-0"
             />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-base tracking-tight font-sans text-zinc-800 dark:text-zinc-100">POCKETBOOTH</h1>
-                <span className="text-[10px] font-mono tracking-widest bg-amber-100/70 dark:bg-zinc-800 text-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold border border-amber-200/60 dark:border-zinc-700">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-bold text-sm sm:text-base tracking-tight font-sans text-zinc-800 dark:text-zinc-100 truncate">POCKETBOOTH</h1>
+                <span className="text-[9px] sm:text-[10px] font-mono tracking-widest bg-amber-100/70 dark:bg-zinc-800 text-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold border border-amber-200/60 dark:border-zinc-700 flex-shrink-0">
                   STUDIO
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono tracking-tight -mt-0.5">Self Photo Booth Studio</p>
+              <p className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-mono tracking-tight -mt-0.5 truncate hidden sm:block">Self Photo Booth Studio</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <button
               onClick={() => setShowSupportModal(true)}
-              className="text-xs font-bold px-3 py-1.5 rounded-full border border-rose-200 dark:border-rose-900/60 bg-rose-50/90 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 transition flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              className="h-8 sm:h-9 px-2 sm:px-3 text-xs font-bold rounded-full border border-rose-200 dark:border-rose-900/60 bg-rose-50/90 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 transition flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 flex-shrink-0"
               title="Dukung Developer via QRIS"
             >
               <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 animate-pulse" />
-              <span>Support</span>
+              <span className="hidden sm:inline">Support</span>
             </button>
             <button
               onClick={() => setIsDark(!isDark)}
-              className="w-9 h-9 flex items-center justify-center rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition shadow-xs cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition shadow-xs cursor-pointer flex-shrink-0"
               title={isDark ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
             >
               {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-700" />}
             </button>
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="w-9 h-9 flex items-center justify-center rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition shadow-xs cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition shadow-xs cursor-pointer flex-shrink-0"
               title={soundEnabled ? 'Matikan Suara' : 'Nyalakan Suara'}
             >
               {soundEnabled ? <Volume2 className="w-4 h-4 text-zinc-700 dark:text-zinc-200" /> : <VolumeX className="w-4 h-4 text-zinc-400" />}
             </button>
             <button
               onClick={handleResetAll}
-              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="h-8 sm:h-9 px-2 sm:px-3 text-xs font-semibold rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 transition flex items-center gap-1 shadow-xs cursor-pointer flex-shrink-0"
+              title="Reset Semua"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reset Semua</span>
+              <span className="hidden sm:inline">Reset</span>
             </button>
           </div>
         </div>
@@ -1811,37 +1790,18 @@ export default function Photobooth() {
               </p>
             </div>
 
-            {/* Standard Indonesian QRIS Card */}
+            {/* Clean QRIS Card */}
             <div className="w-full bg-white text-zinc-900 rounded-2xl p-4 border border-zinc-200 shadow-sm flex flex-col items-center">
-              {/* QRIS Header */}
-              <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-zinc-100">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-black text-sm tracking-wider text-rose-600 font-mono">QRIS</span>
-                  <span className="text-[8px] font-bold bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded">GPN</span>
-                </div>
-                <span className="text-[10px] font-mono font-bold text-zinc-400">NMID: ID1026609056225</span>
-              </div>
-
-              {/* Merchant Info */}
-              <div className="text-center mb-2">
-                <h4 className="font-extrabold text-sm text-zinc-900 tracking-tight leading-tight">
-                  Gerai Digital
-                </h4>
-                <p className="text-[10px] font-medium text-zinc-500">
-                  Kediri (Kab) • Bank Mandiri
-                </p>
-              </div>
-
               {/* QR Code */}
               <div className="p-2 bg-white rounded-xl border border-zinc-100 shadow-2xs">
                 {qrisDataUrl ? (
                   <img
                     src={qrisDataUrl}
-                    alt="QRIS Gerai Digital"
-                    className="w-52 h-52 object-contain"
+                    alt="QRIS Support"
+                    className="w-56 h-56 object-contain"
                   />
                 ) : (
-                  <div className="w-52 h-52 flex items-center justify-center text-zinc-400 font-mono text-xs">
+                  <div className="w-56 h-56 flex items-center justify-center text-zinc-400 font-mono text-xs">
                     Memuat QRIS...
                   </div>
                 )}
@@ -1857,29 +1817,6 @@ export default function Photobooth() {
                 <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">Dana</span>
                 <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">ShopeePay</span>
               </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="grid grid-cols-2 gap-2 w-full">
-              <button
-                type="button"
-                onClick={handleDownloadQris}
-                className="py-2.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                title="Unduh gambar QRIS ke galeri HP"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Unduh QR</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCopyQris}
-                className="py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                title="Salin teks string QRIS"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>Salin String</span>
-              </button>
             </div>
           </div>
         </div>
