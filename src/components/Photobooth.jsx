@@ -681,61 +681,96 @@ export default function Photobooth() {
   }, []);
 
   // Start Camera Helper with Progressive Fallback
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (targetMode = facingMode) => {
     if (!navigator?.mediaDevices?.getUserMedia) {
-      showToast('Kamera butuh akses HTTPS atau localhost 🔒');
-      return;
+      if (typeof window !== 'undefined' && window.isSecureContext === false) {
+        showToast('Kamera membutuhkan koneksi HTTPS aman 🔒');
+      } else {
+        showToast('Browser ini tidak mendukung akses kamera 🔒');
+      }
+      return false;
     }
 
     try {
-      stopCamera();
+      // Clean up previous tracks first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
 
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: facingMode },
-            width: { ideal: 1280 },
-            height: { ideal: 960 },
-          },
-          audio: false,
-        });
-      } catch (e) {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
-        });
+      let stream = null;
+      const constraintsList = [
+        { video: { facingMode: { ideal: targetMode } }, audio: false },
+        { video: { facingMode: targetMode }, audio: false },
+        { video: true, audio: false }
+      ];
+
+      let lastError = null;
+      for (const constraints of constraintsList) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (stream) break;
+        } catch (e) {
+          lastError = e;
+          // Do not retry if user explicitly blocked/denied permission
+          if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+            throw e;
+          }
+        }
+      }
+
+      if (!stream) {
+        throw lastError || new Error('Tidak dapat memperoleh stream video');
       }
 
       streamRef.current = stream;
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        const video = videoRef.current;
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('muted', 'true');
+        video.srcObject = stream;
         try {
-          await videoRef.current.play();
+          await video.play();
         } catch (playErr) {
-          console.warn('Video play error:', playErr);
+          console.warn('Direct video play error:', playErr);
         }
       }
 
       setIsCameraActive(true);
       showToast('Kamera aktif! 📷');
+      return true;
     } catch (err) {
       console.error('Camera error:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        showToast('Izin kamera ditolak. Aktifkan di browser 🔒');
+        showToast('Izin kamera ditolak. Berikan izin di browser/HP 🔒');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         showToast('Kamera tidak ditemukan di perangkat 📷');
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        showToast('Kamera sedang dipakai aplikasi lain ⚠️');
+        showToast('Kamera sedang dipakai aplikasi lain. Tutup app lain ⚠️');
+      } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+        showToast('Resolusi/kamera tidak didukung perangkat ⚠️');
       } else {
-        showToast(`Gagal buka kamera: ${err.message || 'Error'} ❌`);
+        showToast(`Gagal buka kamera: ${err.name || 'Error'} ❌`);
       }
       setIsCameraActive(false);
+      return false;
     }
-  }, [facingMode, stopCamera, showToast]);
+  }, [facingMode, showToast]);
 
-  // Sync Video Element with Stream
+  // Flip Camera Front / Back
+  const toggleFacingMode = useCallback(async () => {
+    const nextMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(nextMode);
+    if (isCameraActive) {
+      await startCamera(nextMode);
+    }
+  }, [facingMode, isCameraActive, startCamera]);
+
+  // Sync Video Element with Stream if re-attached
   useEffect(() => {
     if (isCameraActive && videoRef.current && streamRef.current) {
       if (videoRef.current.srcObject !== streamRef.current) {
@@ -744,13 +779,6 @@ export default function Photobooth() {
       }
     }
   }, [isCameraActive]);
-
-  // Restart camera when facingMode changes
-  useEffect(() => {
-    if (isCameraActive) {
-      startCamera();
-    }
-  }, [facingMode, startCamera, isCameraActive]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -772,12 +800,13 @@ export default function Photobooth() {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
 
+      ctx.save();
       if (mirrorCamera && facingMode === 'user') {
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
       }
-
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
 
       setIsFlashing(true);
       if (soundEnabled) playShutterSound();
@@ -796,7 +825,8 @@ export default function Photobooth() {
   const handleCapture = useCallback(
     async (slotIndex) => {
       if (!isCameraActive) {
-        await startCamera();
+        const ok = await startCamera();
+        if (!ok) return;
         return;
       }
 
@@ -822,7 +852,8 @@ export default function Photobooth() {
   // Auto Burst / Series Mode
   const handleAutoSeries = useCallback(async () => {
     if (!isCameraActive) {
-      await startCamera();
+      const ok = await startCamera();
+      if (!ok) return;
     }
 
     setIsAutoShooting(true);
@@ -1060,16 +1091,16 @@ export default function Photobooth() {
                   autoPlay
                   playsInline
                   muted
-                  onLoadedMetadata={() => {
-                    videoRef.current?.play().catch(() => {});
+                  onLoadedMetadata={(e) => {
+                    e.target.play().catch(() => {});
                   }}
-                  className={`w-full h-full object-cover ${mirrorCamera && facingMode === 'user' ? '-scale-x-100' : ''} ${currentFilterObj.class} ${
-                    isCameraActive ? 'block' : 'hidden'
-                  }`}
+                  className={`w-full h-full object-cover transition-opacity duration-200 ${
+                    mirrorCamera && facingMode === 'user' ? '-scale-x-100' : ''
+                  } ${currentFilterObj.class} ${isCameraActive ? 'opacity-100' : 'opacity-0'}`}
                 />
 
                 {!isCameraActive && (
-                  <div className="text-center p-6 flex flex-col items-center gap-3">
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 bg-zinc-950 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shadow-md">
                       <Camera className="w-8 h-8" />
                     </div>
@@ -1080,8 +1111,8 @@ export default function Photobooth() {
                       </p>
                     </div>
                     <button
-                      onClick={startCamera}
-                      className="mt-2 text-xs font-bold px-5 py-2.5 bg-white text-zinc-900 rounded-full hover:bg-zinc-100 transition shadow"
+                      onClick={() => startCamera()}
+                      className="mt-2 text-xs font-bold px-5 py-2.5 bg-white text-zinc-900 rounded-full hover:bg-zinc-100 transition shadow active:scale-95"
                     >
                       Buka Kamera
                     </button>
@@ -1143,7 +1174,7 @@ export default function Photobooth() {
                         MIRROR
                       </button>
                       <button
-                        onClick={() => setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'))}
+                        onClick={toggleFacingMode}
                         className="p-1 rounded-full text-zinc-300 hover:text-white transition"
                         title="Ganti Kamera Depan/Belakang"
                       >
