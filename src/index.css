@@ -38,4 +38,10 @@ body {
   background-color: #f5ede2;
   color: #1c1917;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark body {
+  background-color: #0c0a09;
+  color: #f4f4f5;
 }

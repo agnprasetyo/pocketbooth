@@ -16,6 +16,8 @@ import {
   Zap,
   Box,
   ChevronDown,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { savePhoto, getAllPhotos, deletePhoto, clearAllPhotos } from '../db/photoDb';
 import { playCountdownBeep, playShutterSound } from '../utils/audio';
@@ -582,6 +584,27 @@ const STICKERS = [
 ];
 
 export default function Photobooth() {
+  // Theme Mode: Light & Dark
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pb-theme');
+      if (saved) return saved === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+      localStorage.setItem('pb-theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      localStorage.setItem('pb-theme', 'light');
+    }
+  }, [isDark]);
+
   // View Modes: 'studio' (Standby Mode & Photostrip Preview) | 'desain' (Pilih Paket Tema & Strip Layout)
   const [activeTab, setActiveTab] = useState('studio');
 
@@ -1037,24 +1060,30 @@ export default function Photobooth() {
   const photosCount = Object.keys(photos).filter((k) => photos[k] && Number(k) < totalSlots).length;
 
   return (
-    <div className="min-h-screen bg-[#f5ede2] text-zinc-900 pb-20 relative overflow-hidden selection:bg-rose-200">
+    <div className="min-h-screen bg-[#f5ede2] dark:bg-[#0c0a09] text-zinc-900 dark:text-zinc-100 pb-20 relative overflow-hidden transition-colors duration-200 selection:bg-rose-200 dark:selection:bg-rose-950">
 
       {/* ── Background Subtle Ambient Gradient ── */}
       <div
-        className="fixed inset-0 pointer-events-none z-0"
+        className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-300"
         style={{
-          backgroundImage: `
-            radial-gradient(ellipse at 20% 10%, rgba(224,200,180,0.45) 0%, transparent 55%),
-            radial-gradient(ellipse at 80% 85%, rgba(181,201,168,0.25) 0%, transparent 55%),
-            radial-gradient(ellipse at 55% 50%, rgba(240,215,200,0.15) 0%, transparent 70%)
-          `,
+          backgroundImage: isDark
+            ? `
+              radial-gradient(ellipse at 20% 10%, rgba(120,80,60,0.18) 0%, transparent 55%),
+              radial-gradient(ellipse at 80% 85%, rgba(60,100,80,0.14) 0%, transparent 55%),
+              radial-gradient(ellipse at 55% 50%, rgba(100,70,80,0.10) 0%, transparent 70%)
+            `
+            : `
+              radial-gradient(ellipse at 20% 10%, rgba(224,200,180,0.45) 0%, transparent 55%),
+              radial-gradient(ellipse at 80% 85%, rgba(181,201,168,0.25) 0%, transparent 55%),
+              radial-gradient(ellipse at 55% 50%, rgba(240,215,200,0.15) 0%, transparent 70%)
+            `,
         }}
       />
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900/90 backdrop-blur-md text-white text-xs md:text-sm font-medium px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 border border-zinc-700 animate-in fade-in slide-in-from-top-3">
-          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-zinc-900/90 dark:bg-zinc-100/95 backdrop-blur-md text-white dark:text-zinc-900 text-xs md:text-sm font-medium px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 border border-zinc-700 dark:border-zinc-300 animate-in fade-in slide-in-from-top-3">
+          <Sparkles className="w-4 h-4 text-amber-300 dark:text-amber-500 animate-pulse" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -1065,34 +1094,43 @@ export default function Photobooth() {
       )}
 
       {/* Header */}
-      <header className="border-b border-amber-200/50 bg-white/60 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-amber-200/50 dark:border-zinc-800 bg-white/60 dark:bg-zinc-900/70 backdrop-blur-md sticky top-0 z-40 transition-colors">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#5d7255] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-              PB
-            </div>
+            <img
+              src="/logo.png"
+              alt="Pocket Photo Booth Logo"
+              className="w-9 h-9 object-contain rounded-xl shadow-xs"
+            />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-base tracking-tight font-sans text-zinc-800">POCKETBOOTH</h1>
-                <span className="text-[10px] font-mono tracking-widest bg-amber-100/70 text-amber-900 px-1.5 py-0.5 rounded font-semibold border border-amber-200/60">
+                <h1 className="font-bold text-base tracking-tight font-sans text-zinc-800 dark:text-zinc-100">POCKETBOOTH</h1>
+                <span className="text-[10px] font-mono tracking-widest bg-amber-100/70 dark:bg-zinc-800 text-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold border border-amber-200/60 dark:border-zinc-700">
                   STUDIO
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500 font-mono tracking-tight -mt-0.5">Self Photo Booth Studio</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono tracking-tight -mt-0.5">Self Photo Booth Studio</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setIsDark(!isDark)}
+              className="w-9 h-9 flex items-center justify-center rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition shadow-xs cursor-pointer"
+              title={isDark ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+            >
+              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-700" />}
+            </button>
+            <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="w-9 h-9 flex items-center justify-center rounded-full border border-amber-200/70 bg-white/80 hover:bg-white text-zinc-600 transition shadow-xs"
+              className="w-9 h-9 flex items-center justify-center rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition shadow-xs cursor-pointer"
               title={soundEnabled ? 'Matikan Suara' : 'Nyalakan Suara'}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-zinc-700" /> : <VolumeX className="w-4 h-4 text-zinc-400" />}
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-zinc-700 dark:text-zinc-200" /> : <VolumeX className="w-4 h-4 text-zinc-400" />}
             </button>
             <button
               onClick={handleResetAll}
-              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-amber-200/70 bg-white/80 hover:bg-white text-zinc-700 transition flex items-center gap-1.5 shadow-xs"
+              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 transition flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Reset Semua</span>
@@ -1106,13 +1144,13 @@ export default function Photobooth() {
 
         {/* ── SEGMENTED TOP MENU NAVIGATION ── */}
         <div className="flex items-center justify-center mb-6">
-          <nav className="inline-flex p-1.5 rounded-2xl bg-white/80 backdrop-blur-md border border-amber-200/70 shadow-xs gap-1.5">
+          <nav className="inline-flex p-1.5 rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-amber-200/70 dark:border-zinc-800 shadow-xs gap-1.5">
             <button
               onClick={() => setActiveTab('studio')}
               className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'studio'
-                  ? 'bg-zinc-900 text-white shadow-xs'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70'
               }`}
             >
               <Camera className="w-3.5 h-3.5" />
@@ -1121,7 +1159,7 @@ export default function Photobooth() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
               {photosCount > 0 && (
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-zinc-800 text-amber-900 dark:text-amber-400 border border-amber-200 dark:border-zinc-700">
                   {photosCount}/{totalSlots}
                 </span>
               )}
@@ -1131,8 +1169,8 @@ export default function Photobooth() {
               onClick={() => setActiveTab('desain')}
               className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'desain'
-                  ? 'bg-zinc-900 text-white shadow-xs'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100/70'
+                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -1148,13 +1186,13 @@ export default function Photobooth() {
             {/* ── LEFT: Standby Mode (7 Cols) ── */}
             <div className="lg:col-span-7 flex flex-col gap-4">
               {/* Viewfinder Card */}
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 md:p-5 shadow-sm border border-amber-200/70 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-3 text-xs text-zinc-500 font-mono">
+            <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-4 md:p-5 shadow-sm border border-amber-200/70 dark:border-zinc-800 relative overflow-hidden transition-colors">
+              <div className="flex items-center justify-between mb-3 text-xs text-zinc-500 dark:text-zinc-400 font-mono">
                 <span className="flex items-center gap-1.5 font-bold">
-                  <span className={`w-2.5 h-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300'}`} />
+                  <span className={`w-2.5 h-2.5 rounded-full ${isCameraActive ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-300 dark:bg-zinc-600'}`} />
                   {isCameraActive ? 'LIVE CAMERA ACTIVE' : 'STANDBY MODE'}
                 </span>
-                <span className="bg-amber-100/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-amber-900 border border-amber-200/60">
+                <span className="bg-amber-100/80 dark:bg-zinc-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-amber-900 dark:text-amber-300 border border-amber-200/60 dark:border-zinc-700">
                   SLOT {selectedSlot + 1} DARI {totalSlots}
                 </span>
               </div>
@@ -1277,7 +1315,7 @@ export default function Photobooth() {
                 <button
                   onClick={() => handleCapture(selectedSlot)}
                   disabled={isAutoShooting}
-                  className="w-full flex-1 py-3.5 px-6 rounded-2xl bg-zinc-900 hover:bg-black text-white font-bold text-sm tracking-wide shadow-md transition flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
+                  className="w-full flex-1 py-3.5 px-6 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-sm tracking-wide shadow-md transition flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
                 >
                   <Camera className="w-4 h-4" />
                   <span>
@@ -1292,7 +1330,7 @@ export default function Photobooth() {
                 {/* Upload Local Image */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full sm:w-auto p-3.5 rounded-2xl border border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-700 font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
+                  className="w-full sm:w-auto p-3.5 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                   title="Upload Foto Sendiri"
                 >
                   <Upload className="w-4 h-4" />
@@ -1301,23 +1339,23 @@ export default function Photobooth() {
               </div>
 
               {/* Slot Indicator Pills */}
-              <div className="mt-4 pt-3 border-t border-amber-200/50 flex items-center justify-between text-xs">
-                <span className="text-zinc-500 font-mono text-[11px] font-bold">PILIH SLOT FRAME:</span>
+              <div className="mt-4 pt-3 border-t border-amber-200/50 dark:border-zinc-800 flex items-center justify-between text-xs">
+                <span className="text-zinc-500 dark:text-zinc-400 font-mono text-[11px] font-bold">PILIH SLOT FRAME:</span>
                 <div className="flex items-center gap-2">
                   {Array.from({ length: totalSlots }).map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedSlot(idx)}
-                      className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                         selectedSlot === idx
-                          ? 'bg-zinc-900 text-white shadow-sm'
+                          ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
                           : photos[idx]
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
                       }`}
                     >
                       <span>#{idx + 1}</span>
-                      {photos[idx] && <Check className="w-3 h-3 text-emerald-600" />}
+                      {photos[idx] && <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
                     </button>
                   ))}
                 </div>
@@ -1325,14 +1363,14 @@ export default function Photobooth() {
             </div>
 
               {/* Quick Bar to open Customization */}
-              <div className="bg-white/80 backdrop-blur-md rounded-2xl p-3 px-4 border border-amber-200/60 shadow-xs flex items-center justify-between">
+              <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl p-3 px-4 border border-amber-200/60 dark:border-zinc-800 shadow-xs flex items-center justify-between transition-colors">
                 <div className="flex items-center gap-2 text-xs font-mono">
-                  <span className="text-zinc-500 font-bold">TEMA:</span>
-                  <strong className="text-zinc-800">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
+                  <span className="text-zinc-500 dark:text-zinc-400 font-bold">TEMA:</span>
+                  <strong className="text-zinc-800 dark:text-zinc-200">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
                 </div>
                 <button
                   onClick={() => setActiveTab("desain")}
-                  className="px-3.5 py-1.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   <Sliders className="w-3.5 h-3.5" />
                   <span>Ubah Tema & Strip Layout</span>
@@ -1343,13 +1381,13 @@ export default function Photobooth() {
             {/* ── RIGHT: Photostrip Print Preview (5 Cols) ── */}
             <div className="lg:col-span-5 flex flex-col items-center gap-4 lg:sticky lg:top-20">
               <div className="w-full flex items-center justify-between px-1">
-                <span className="text-xs font-bold text-zinc-600 font-mono tracking-wider">
+                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 font-mono tracking-wider">
                   PHOTOSTRIP PREVIEW ({photosCount}/{totalSlots})
                 </span>
                 <button
                   onClick={handleDownload}
                   disabled={isDownloading || photosCount === 0}
-                  className="px-5 py-2.5 rounded-full bg-zinc-900 hover:bg-black text-white text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                  className="px-5 py-2.5 rounded-full bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>{isDownloading ? "Menyimpan..." : "Download Print"}</span>
@@ -1357,7 +1395,7 @@ export default function Photobooth() {
               </div>
 
               {/* The Actual Captured Photostrip Card */}
-            <div className="p-5 bg-stone-300/40 backdrop-blur-md rounded-3xl border border-stone-300/80 shadow-inner flex justify-center w-full overflow-hidden">
+            <div className="p-5 bg-stone-300/40 dark:bg-zinc-950/60 backdrop-blur-md rounded-3xl border border-stone-300/80 dark:border-zinc-800 shadow-inner flex justify-center w-full overflow-hidden transition-colors">
               <div
                 ref={stripRef}
                 data-strip-target="true"
@@ -1509,12 +1547,12 @@ export default function Photobooth() {
           <div className="max-w-4xl mx-auto flex flex-col gap-6">
 
             {/* Section A: Pilih Paket Tema */}
-            <section className="max-w-4xl mx-auto mb-6 bg-white/75 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 shadow-sm">
+            <section className="max-w-4xl mx-auto mb-6 bg-white/75 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 dark:border-zinc-800 shadow-sm transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 px-1">
               <div className="flex items-center gap-2">
-                <Box className="w-4 h-4 text-emerald-700" />
-                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">PILIH PAKET TEMA</h2>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100/80 text-amber-900 border border-amber-200/60">
+                <Box className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-200">PILIH PAKET TEMA</h2>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-zinc-800 text-amber-900 dark:text-amber-300 border border-amber-200/60 dark:border-zinc-700">
                   {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).length} TEMA
                 </span>
               </div>
@@ -1524,7 +1562,7 @@ export default function Photobooth() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="appearance-none pl-3 pr-8 py-1.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-700 bg-white hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-800 transition shadow-xs cursor-pointer"
+                  className="appearance-none pl-3 pr-8 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-zinc-100/10 focus:border-zinc-800 dark:focus:border-zinc-500 transition shadow-xs cursor-pointer"
                 >
                   {THEME_CATEGORIES.map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -1532,7 +1570,7 @@ export default function Photobooth() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-zinc-500 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
               </div>
             </div>
 
@@ -1546,8 +1584,8 @@ export default function Photobooth() {
                     onClick={() => applyTemplate(pkg)}
                     className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group cursor-pointer active:scale-[0.98] ${
                       isSelected
-                        ? 'border-zinc-900 ring-2 ring-zinc-900/15 shadow-md bg-white'
-                        : 'border-zinc-200/80 bg-white/70 hover:bg-white text-zinc-700 hover:shadow-xs hover:border-zinc-300'
+                        ? 'border-zinc-900 dark:border-zinc-100 ring-2 ring-zinc-900/15 dark:ring-zinc-100/20 shadow-md bg-white dark:bg-zinc-800'
+                        : 'border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700'
                     }`}
                   >
                     <div className="flex items-start justify-between w-full">
@@ -1557,11 +1595,11 @@ export default function Photobooth() {
                         title={`Warna latar: ${pkg.bg}`}
                       />
                       <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-700 truncate max-w-[70px]">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 truncate max-w-[70px]">
                           {pkg.badge}
                         </span>
                         {isSelected && (
-                          <span className="w-4 h-4 rounded-full bg-zinc-900 text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
+                          <span className="w-4 h-4 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center flex-shrink-0 shadow-2xs">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
                           </span>
                         )}
@@ -1569,10 +1607,10 @@ export default function Photobooth() {
                     </div>
 
                     <div>
-                      <p className={`font-bold text-xs leading-tight truncate ${isSelected ? 'text-zinc-900 font-extrabold' : 'text-zinc-800'}`}>
+                      <p className={`font-bold text-xs leading-tight truncate ${isSelected ? 'text-zinc-900 dark:text-zinc-100 font-extrabold' : 'text-zinc-800 dark:text-zinc-200'}`}>
                         {pkg.name}
                       </p>
-                      <p className="text-[10px] text-zinc-500 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
                     </div>
                   </button>
                 );
@@ -1581,11 +1619,11 @@ export default function Photobooth() {
           </section>
 
             {/* Section B: Pilih Strip Layout */}
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 flex flex-col gap-5">
+            <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 dark:border-zinc-800 flex flex-col gap-5 transition-colors">
 
               {/* 1. Layout Mode */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-2.5 flex items-center gap-1.5">
                   <LayoutGrid className="w-3.5 h-3.5" />
                   PILIH STRIP LAYOUT
                 </label>
@@ -1597,17 +1635,17 @@ export default function Photobooth() {
                         setLayout(item.id);
                         if (selectedSlot >= item.slots) setSelectedSlot(0);
                       }}
-                      className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between h-20 ${
+                      className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between h-20 cursor-pointer ${
                         layout === item.id
-                          ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800'
+                          ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                          : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs">{item.label}</span>
-                        {layout === item.id && <Check className="w-3.5 h-3.5 text-white" />}
+                        {layout === item.id && <Check className="w-3.5 h-3.5 text-white dark:text-zinc-900" />}
                       </div>
-                      <span className={`text-[10px] leading-tight ${layout === item.id ? 'text-zinc-300' : 'text-zinc-400'}`}>
+                      <span className={`text-[10px] leading-tight ${layout === item.id ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
                         {item.desc}
                       </span>
                     </button>
@@ -1617,7 +1655,7 @@ export default function Photobooth() {
 
               {/* 2. Photo Filters */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block mb-2.5 flex items-center gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-2.5 flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5" />
                   FILTER FOTO
                 </label>
@@ -1626,10 +1664,10 @@ export default function Photobooth() {
                     <button
                       key={f.id}
                       onClick={() => setFilter(f.id)}
-                      className={`p-2 rounded-xl border text-center transition flex flex-col items-center gap-1.5 ${
+                      className={`p-2 rounded-xl border text-center transition flex flex-col items-center gap-1.5 cursor-pointer ${
                         filter === f.id
-                          ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                          : 'border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
+                          ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                          : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200'
                       }`}
                     >
                       <span className={`w-5 h-5 rounded-full ${f.preview} border border-white/40 shadow-2xs`} />
@@ -1640,41 +1678,41 @@ export default function Photobooth() {
               </div>
 
               {/* 3. Text Customization */}
-              <div className="pt-2 border-t border-amber-200/50 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="pt-2 border-t border-amber-200/50 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">JUDUL STRIP</label>
+                  <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-1 block">JUDUL STRIP</label>
                   <input
                     type="text"
                     value={titleText}
                     onChange={(e) => setTitleText(e.target.value.toUpperCase())}
                     maxLength={22}
                     placeholder="POCKETBOOTH"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 font-mono text-xs focus:outline-none focus:border-zinc-800 bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 font-mono text-xs focus:outline-none focus:border-zinc-800 dark:focus:border-zinc-400 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-zinc-600 mb-1 block">SUBTITEL / CAPTION</label>
+                  <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-1 block">SUBTITEL / CAPTION</label>
                   <input
                     type="text"
                     value={subText}
                     onChange={(e) => setSubText(e.target.value)}
                     maxLength={28}
                     placeholder="SELF PHOTO STUDIO"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-xs focus:outline-none focus:border-zinc-800 bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs focus:outline-none focus:border-zinc-800 dark:focus:border-zinc-400 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                   />
                 </div>
               </div>
 
               {/* 4. Stickers & Date */}
               <div>
-                <label className="text-[11px] font-bold text-zinc-600 mb-2 block flex items-center justify-between">
+                <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-2 block flex items-center justify-between">
                   <span>PILIH STIKER</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 text-[10px]">
+                  <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 dark:text-zinc-400 text-[10px]">
                     <input
                       type="checkbox"
                       checked={showDate}
                       onChange={(e) => setShowDate(e.target.checked)}
-                      className="rounded text-zinc-900 focus:ring-0"
+                      className="rounded text-zinc-900 dark:text-zinc-100 focus:ring-0"
                     />
                     Tampilkan Tanggal
                   </label>
@@ -1684,10 +1722,10 @@ export default function Photobooth() {
                     <button
                       key={s.id}
                       onClick={() => setSticker(s.id)}
-                      className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1 flex-shrink-0 ${
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                         sticker === s.id
-                          ? 'border-zinc-900 bg-zinc-900 text-white'
-                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                          ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                          : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700'
                       }`}
                     >
                       <span>{s.symbol || '∅'}</span>
@@ -1701,12 +1739,12 @@ export default function Photobooth() {
 
             {/* Bottom action bar */}
             <div className="flex items-center justify-between p-1">
-              <span className="text-xs text-zinc-500 font-mono">
-                Tema aktif: <strong className="text-zinc-800">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
+                Tema aktif: <strong className="text-zinc-800 dark:text-zinc-200">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
               </span>
               <button
                 onClick={() => setActiveTab("studio")}
-                className="px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer"
+                className="px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>Selesai & Buka Standby Mode</span>
