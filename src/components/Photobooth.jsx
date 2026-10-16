@@ -659,13 +659,10 @@ export default function Photobooth() {
     showToast(`Template "${pkg.name}" diterapkan! ✨`);
   };
 
-  // Load Saved Photos
+  // Reset all photos on page load / reload
   useEffect(() => {
-    getAllPhotos(4).then((stored) => {
-      if (stored && Object.keys(stored).length > 0) {
-        setPhotos(stored);
-      }
-    });
+    clearAllPhotos();
+    setPhotos({});
   }, []);
 
   // Stop Camera Helper
@@ -788,24 +785,45 @@ export default function Photobooth() {
     };
   }, [stopCamera]);
 
-  // Capture Frame from Video
+  // Capture Frame from Video with Exact 4:3 Center Crop
   const captureFrame = useCallback(
     async (slotIndex) => {
       if (!videoRef.current || !canvasRef.current) return null;
 
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
 
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      const vw = video.videoWidth || 640;
+      const vh = video.videoHeight || 480;
+      const targetAspect = 4 / 3;
+      const vAspect = vw / vh;
+
+      let sx = 0;
+      let sy = 0;
+      let sw = vw;
+      let sh = vh;
+
+      if (vAspect > targetAspect) {
+        // Video is wider than 4:3 (e.g. 16:9 landscape) -> crop sides
+        sw = Math.round(vh * targetAspect);
+        sx = Math.round((vw - sw) / 2);
+      } else if (vAspect < targetAspect) {
+        // Video is taller than 4:3 (e.g. 9:16 portrait on smartphone) -> crop top/bottom
+        sh = Math.round(vw / targetAspect);
+        sy = Math.round((vh - sh) / 2);
+      }
+
+      // Crisp 4:3 resolution matching the viewfinder and slot
+      canvas.width = 1200;
+      canvas.height = 900;
+      const ctx = canvas.getContext('2d');
 
       ctx.save();
       if (mirrorCamera && facingMode === 'user') {
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
       }
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
       setIsFlashing(true);
@@ -881,18 +899,46 @@ export default function Photobooth() {
     showToast('Selesai! Semua foto siap dicetak 🎉');
   }, [isCameraActive, startCamera, timerSeconds, totalSlots, soundEnabled, captureFrame, showToast]);
 
-  // Upload Local File
+  // Upload Local File with 4:3 Auto-Crop
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (evt) => {
-      const dataUrl = evt.target.result;
-      await savePhoto(selectedSlot, dataUrl);
-      setPhotos((prev) => ({ ...prev, [selectedSlot]: dataUrl }));
-      showToast(`Foto diunggah ke slot ${selectedSlot + 1} 📁`);
-      setSelectedSlot((prev) => (prev + 1) % totalSlots);
+    reader.onload = (evt) => {
+      const img = new Image();
+      img.onload = async () => {
+        const c = document.createElement('canvas');
+        c.width = 1200;
+        c.height = 900;
+        const ctx = c.getContext('2d');
+
+        const iw = img.width;
+        const ih = img.height;
+        const targetAspect = 4 / 3;
+        const iAspect = iw / ih;
+
+        let sx = 0;
+        let sy = 0;
+        let sw = iw;
+        let sh = ih;
+
+        if (iAspect > targetAspect) {
+          sw = Math.round(ih * targetAspect);
+          sx = Math.round((iw - sw) / 2);
+        } else if (iAspect < targetAspect) {
+          sh = Math.round(iw / targetAspect);
+          sy = Math.round((ih - sh) / 2);
+        }
+
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        const dataUrl = c.toDataURL('image/jpeg', 0.95);
+        await savePhoto(selectedSlot, dataUrl);
+        setPhotos((prev) => ({ ...prev, [selectedSlot]: dataUrl }));
+        showToast(`Foto diunggah ke slot ${selectedSlot + 1} 📁`);
+        setSelectedSlot((prev) => (prev + 1) % totalSlots);
+      };
+      img.src = evt.target.result;
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -927,22 +973,51 @@ export default function Photobooth() {
       setIsDownloading(true);
       showToast('Sedang merender photostrip...');
 
+      const targetWidth = layout === 'grid-4' ? 330 : 275;
+
       const canvas = await html2canvas(stripRef.current, {
         scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: frameBg,
         logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 1200,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.querySelector('[data-strip-target="true"]');
+          if (clonedElement) {
+            clonedElement.style.width = `${targetWidth}px`;
+            clonedElement.style.minWidth = `${targetWidth}px`;
+            clonedElement.style.maxWidth = `${targetWidth}px`;
+            clonedElement.style.transform = 'none';
+          }
+        },
       });
 
-      const link = document.createElement('a');
       const now = new Date();
       const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-      link.download = `pocketbooth-${selectedTemplate}-${dateStr}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const filename = `pocketbooth-${selectedTemplate}-${dateStr}.png`;
 
-      showToast('Photostrip berhasil diunduh! 💖');
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          showToast('Photostrip berhasil diunduh! 💖');
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        showToast('Photostrip berhasil diunduh! 💖');
+      }, 'image/png');
     } catch (err) {
       console.error(err);
       showToast('Gagal mengunduh foto 😢');
@@ -1285,6 +1360,7 @@ export default function Photobooth() {
             <div className="p-5 bg-stone-300/40 backdrop-blur-md rounded-3xl border border-stone-300/80 shadow-inner flex justify-center w-full overflow-hidden">
               <div
                 ref={stripRef}
+                data-strip-target="true"
                 style={{
                   backgroundColor: frameBg,
                   color: frameText,
@@ -1315,7 +1391,6 @@ export default function Photobooth() {
                         washiType={idx === 0 || idx === 1 ? washiType : 'none'}
                         onSelect={() => setSelectedSlot(idx)}
                         onReset={(e) => handleResetSlot(idx, e)}
-                        aspect="aspect-[4/3]"
                       />
                     ))}
                   </div>
@@ -1334,7 +1409,6 @@ export default function Photobooth() {
                           washiType={washiType}
                           onSelect={() => setSelectedSlot(idx)}
                           onReset={(e) => handleResetSlot(idx, e)}
-                          aspect="aspect-[4/3]"
                         />
 
                         {/* Botanical Doodles */}
@@ -1658,12 +1732,13 @@ export default function Photobooth() {
 }
 
 // Individual Photo Slot Frame with Washi Tape
-function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textColor, isActive, washiType, onSelect, onReset, aspect }) {
+function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textColor, isActive, washiType, onSelect, onReset }) {
   return (
     <div
       onClick={onSelect}
-      className={`relative w-full ${aspect} rounded-xl overflow-visible cursor-pointer transition group border`}
+      className="relative w-full rounded-xl overflow-visible cursor-pointer transition group border"
       style={{
+        paddingTop: '75%', // Guarantees exact 4:3 box in every browser and html2canvas (3/4 = 75%)
         backgroundColor: accentColor,
         borderColor: isActive ? '#000000' : borderColor,
       }}
@@ -1671,14 +1746,15 @@ function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textCo
       {/* Decorative Washi Tape on top edge */}
       <WashiTape type={washiType} />
 
-      {/* Inner Image Container */}
-      <div className="w-full h-full rounded-xl overflow-hidden relative">
+      {/* Inner Image Container fills exact 4:3 box */}
+      <div className="absolute inset-0 rounded-xl overflow-hidden">
         {photo ? (
           <>
             <img
               src={photo}
               alt={`Slot ${index + 1}`}
-              className={`w-full h-full object-cover ${filterClass}`}
+              className={`w-full h-full object-cover block ${filterClass}`}
+              style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
             />
             {/* Retake Button */}
             <button
