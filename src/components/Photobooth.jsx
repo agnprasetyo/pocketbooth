@@ -19,7 +19,12 @@ import {
   ChevronUp,
   Sun,
   Moon,
+  Heart,
+  QrCode,
+  Copy,
+  X,
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { savePhoto, getAllPhotos, deletePhoto, clearAllPhotos } from '../db/photoDb';
 import { playCountdownBeep, playShutterSound } from '../utils/audio';
 
@@ -584,6 +589,9 @@ const STICKERS = [
   { id: 'camera', label: 'Camera', symbol: '📸' },
 ];
 
+// ── Static Indonesian QRIS String ──
+const STATIC_QRIS_STRING = "00020101021126690021ID.CO.BANKMANDIRI.WWW01189360000802265034890211722650348930303UMI51440014ID.CO.QRIS.WWW0215ID10266090562250303UMI5204581553033605802ID5913Gerai Digital6012Kediri (Kab)61056421662070703A016304F6CD";
+
 export default function Photobooth() {
   // Theme Mode: Light & Dark
   const [isDark, setIsDark] = useState(() => {
@@ -644,6 +652,25 @@ export default function Photobooth() {
   const [isFlashing, setIsFlashing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Support / QRIS Donation Modal State
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [qrisDataUrl, setQrisDataUrl] = useState('');
+
+  // Generate QRIS Data URL once
+  useEffect(() => {
+    QRCode.toDataURL(STATIC_QRIS_STRING, {
+      width: 280,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+    })
+      .then((url) => setQrisDataUrl(url))
+      .catch((err) => console.error('QR code generation error:', err));
+  }, []);
 
   // Refs
   const videoRef = useRef(null);
@@ -1050,6 +1077,26 @@ export default function Photobooth() {
     }
   };
 
+  // Copy QRIS String
+  const handleCopyQris = async () => {
+    try {
+      await navigator.clipboard.writeText(STATIC_QRIS_STRING);
+      showToast('String QRIS berhasil disalin! 📋');
+    } catch {
+      showToast('Gagal menyalin string QRIS');
+    }
+  };
+
+  // Download QRIS PNG to phone gallery
+  const handleDownloadQris = () => {
+    if (!qrisDataUrl) return;
+    const a = document.createElement('a');
+    a.download = 'qris-pocketbooth-gerai-digital.png';
+    a.href = qrisDataUrl;
+    a.click();
+    showToast('Gambar QRIS berhasil diunduh! 💳');
+  };
+
   const todayFormatted = (() => {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -1115,6 +1162,14 @@ export default function Photobooth() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSupportModal(true)}
+              className="text-xs font-bold px-3 py-1.5 rounded-full border border-rose-200 dark:border-rose-900/60 bg-rose-50/90 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 transition flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              title="Dukung Developer via QRIS"
+            >
+              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 animate-pulse" />
+              <span>Support</span>
+            </button>
             <button
               onClick={() => setIsDark(!isDark)}
               className="w-9 h-9 flex items-center justify-center rounded-full border border-amber-200/70 dark:border-zinc-700 bg-white/80 dark:bg-zinc-800/80 hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition shadow-xs cursor-pointer"
@@ -1707,7 +1762,128 @@ export default function Photobooth() {
               </p>
             </div>
           </div>
+
+        {/* Footer Support Banner */}
+        <footer className="mt-16 text-center text-xs text-zinc-500 dark:text-zinc-400 font-mono flex flex-col sm:flex-row items-center justify-center gap-2">
+          <span>Pocketbooth © {new Date().getFullYear()}</span>
+          <span className="hidden sm:inline">•</span>
+          <button
+            type="button"
+            onClick={() => setShowSupportModal(true)}
+            className="hover:text-rose-600 dark:hover:text-rose-400 transition underline underline-offset-4 flex items-center gap-1 cursor-pointer font-sans font-semibold"
+          >
+            <span>Dukung Aplikasi via QRIS</span>
+            <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 inline" />
+          </button>
+        </footer>
       </main>
+
+      {/* ── SUPPORT / QRIS MODAL ── */}
+      {showSupportModal && (
+        <div
+          onClick={() => setShowSupportModal(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-amber-200/60 dark:border-zinc-800 relative flex flex-col items-center gap-4 animate-in zoom-in-95 duration-150"
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSupportModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center justify-center transition cursor-pointer"
+              title="Tutup"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="text-center w-full pr-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-[11px] font-bold mb-1">
+                <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                <span>Support Developer</span>
+              </div>
+              <h3 className="font-bold text-base text-zinc-800 dark:text-zinc-100">
+                Dukung Pocketbooth
+              </h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Scan QRIS pakai e-wallet atau mobile banking
+              </p>
+            </div>
+
+            {/* Standard Indonesian QRIS Card */}
+            <div className="w-full bg-white text-zinc-900 rounded-2xl p-4 border border-zinc-200 shadow-sm flex flex-col items-center">
+              {/* QRIS Header */}
+              <div className="w-full flex items-center justify-between pb-2 mb-2 border-b border-zinc-100">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-black text-sm tracking-wider text-rose-600 font-mono">QRIS</span>
+                  <span className="text-[8px] font-bold bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded">GPN</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-zinc-400">NMID: ID1026609056225</span>
+              </div>
+
+              {/* Merchant Info */}
+              <div className="text-center mb-2">
+                <h4 className="font-extrabold text-sm text-zinc-900 tracking-tight leading-tight">
+                  Gerai Digital
+                </h4>
+                <p className="text-[10px] font-medium text-zinc-500">
+                  Kediri (Kab) • Bank Mandiri
+                </p>
+              </div>
+
+              {/* QR Code */}
+              <div className="p-2 bg-white rounded-xl border border-zinc-100 shadow-2xs">
+                {qrisDataUrl ? (
+                  <img
+                    src={qrisDataUrl}
+                    alt="QRIS Gerai Digital"
+                    className="w-52 h-52 object-contain"
+                  />
+                ) : (
+                  <div className="w-52 h-52 flex items-center justify-center text-zinc-400 font-mono text-xs">
+                    Memuat QRIS...
+                  </div>
+                )}
+              </div>
+
+              {/* Accepted Payments Badges */}
+              <div className="mt-3 text-[10px] text-zinc-400 font-mono text-center flex flex-wrap items-center justify-center gap-1.5 leading-tight">
+                <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">BCA</span>
+                <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">Mandiri</span>
+                <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">BRI</span>
+                <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">GoPay</span>
+                <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">OVO</span>
+                <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">Dana</span>
+                <span className="bg-zinc-100 px-1.5 py-0.5 rounded font-semibold text-zinc-600">ShopeePay</span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="grid grid-cols-2 gap-2 w-full">
+              <button
+                type="button"
+                onClick={handleDownloadQris}
+                className="py-2.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Unduh gambar QRIS ke galeri HP"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Unduh QR</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyQris}
+                className="py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                title="Salin teks string QRIS"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Salin String</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hidden File Input */}
       <input
