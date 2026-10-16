@@ -16,6 +16,7 @@ import {
   Zap,
   Box,
   ChevronDown,
+  ChevronUp,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -605,8 +606,8 @@ export default function Photobooth() {
     }
   }, [isDark]);
 
-  // View Modes: 'studio' (Standby Mode & Photostrip Preview) | 'desain' (Pilih Paket Tema & Strip Layout)
-  const [activeTab, setActiveTab] = useState('studio');
+  // Collapsible Theme & Layout Settings Panel
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Selected Template Category & Package
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -1141,47 +1142,7 @@ export default function Photobooth() {
 
       {/* Main Studio Viewport */}
       <main className="max-w-6xl mx-auto px-4 pt-6 md:pt-8 relative z-10">
-
-        {/* ── SEGMENTED TOP MENU NAVIGATION ── */}
-        <div className="flex items-center justify-center mb-6">
-          <nav className="inline-flex p-1.5 rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-amber-200/70 dark:border-zinc-800 shadow-xs gap-1.5">
-            <button
-              onClick={() => setActiveTab('studio')}
-              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'studio'
-                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70'
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Standby Mode & Preview</span>
-              {isCameraActive && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              )}
-              {photosCount > 0 && (
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-zinc-800 text-amber-900 dark:text-amber-400 border border-amber-200 dark:border-zinc-700">
-                  {photosCount}/{totalSlots}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('desain')}
-              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'desain'
-                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70'
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Pilih Paket Tema & Strip Layout</span>
-            </button>
-          </nav>
-        </div>
-
-                {/* ── 1. TAMPILAN: STANDBY MODE & PHOTOSTRIP PREVIEW ── */}
-        <div className={activeTab === "studio" ? "block" : "hidden"}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
             {/* ── LEFT: Standby Mode (7 Cols) ── */}
             <div className="lg:col-span-7 flex flex-col gap-4">
@@ -1362,20 +1323,226 @@ export default function Photobooth() {
               </div>
             </div>
 
-              {/* Quick Bar to open Customization */}
-              <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl p-3 px-4 border border-amber-200/60 dark:border-zinc-800 shadow-xs flex items-center justify-between transition-colors">
+              {/* Collapsible Bar for Theme & Strip Layout */}
+              <div
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-2xl p-3 px-4 border border-amber-200/60 dark:border-zinc-800 shadow-xs flex items-center justify-between transition-colors cursor-pointer select-none"
+              >
                 <div className="flex items-center gap-2 text-xs font-mono">
                   <span className="text-zinc-500 dark:text-zinc-400 font-bold">TEMA:</span>
                   <strong className="text-zinc-800 dark:text-zinc-200">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
                 </div>
                 <button
-                  onClick={() => setActiveTab("desain")}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSettingsOpen(!isSettingsOpen);
+                  }}
                   className="px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   <Sliders className="w-3.5 h-3.5" />
-                  <span>Ubah Tema & Strip Layout</span>
+                  <span>{isSettingsOpen ? 'Tutup Pengaturan' : 'Ubah Tema & Strip Layout'}</span>
+                  {isSettingsOpen ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                  )}
                 </button>
               </div>
+
+              {/* Collapsible Customization Panels */}
+              {isSettingsOpen && (
+                <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Section A: Pilih Paket Tema */}
+                  <section className="bg-white/75 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 dark:border-zinc-800 shadow-sm transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 px-1">
+                      <div className="flex items-center gap-2">
+                        <Box className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-200">PILIH PAKET TEMA</h2>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-zinc-800 text-amber-900 dark:text-amber-300 border border-amber-200/60 dark:border-zinc-700">
+                          {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).length} TEMA
+                        </span>
+                      </div>
+
+                      {/* Category Filter Dropdown */}
+                      <div className="relative inline-flex items-center">
+                        <select
+                          value={selectedCategory}
+                          onChange={(e) => setSelectedCategory(e.target.value)}
+                          className="appearance-none pl-3 pr-8 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-zinc-100/10 focus:border-zinc-800 dark:focus:border-zinc-500 transition shadow-xs cursor-pointer"
+                        >
+                          {THEME_CATEGORIES.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.label}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                      </div>
+                    </div>
+
+                    {/* Template Cards Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                      {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).map((pkg) => {
+                        const isSelected = selectedTemplate === pkg.id;
+                        return (
+                          <button
+                            key={pkg.id}
+                            onClick={() => applyTemplate(pkg)}
+                            className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group cursor-pointer active:scale-[0.98] ${
+                              isSelected
+                                ? 'border-zinc-900 dark:border-zinc-100 ring-2 ring-zinc-900/15 dark:ring-zinc-100/20 shadow-md bg-white dark:bg-zinc-800'
+                                : 'border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between w-full">
+                              <span
+                                className="w-5 h-5 rounded-md border shadow-2xs flex-shrink-0"
+                                style={{ backgroundColor: pkg.bg, borderColor: pkg.border }}
+                                title={`Warna latar: ${pkg.bg}`}
+                              />
+                              <div className="flex items-center gap-1">
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 truncate max-w-[70px]">
+                                  {pkg.badge}
+                                </span>
+                                {isSelected && (
+                                  <span className="w-4 h-4 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <p className={`font-bold text-xs leading-tight truncate ${isSelected ? 'text-zinc-900 dark:text-zinc-100 font-extrabold' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                {pkg.name}
+                              </p>
+                              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  {/* Section B: Customization (Layout, Filters, Text, Stickers) */}
+                  <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 dark:border-zinc-800 flex flex-col gap-5 transition-colors">
+                    {/* 1. Layout Mode */}
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-2.5 flex items-center gap-1.5">
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        PILIH STRIP LAYOUT
+                      </label>
+                      <div className="grid grid-cols-3 gap-2.5">
+                        {LAYOUTS.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setLayout(item.id);
+                              if (selectedSlot >= item.slots) setSelectedSlot(0);
+                            }}
+                            className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between h-20 cursor-pointer ${
+                              layout === item.id
+                                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                                : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs">{item.label}</span>
+                              {layout === item.id && <Check className="w-3.5 h-3.5 text-white dark:text-zinc-900" />}
+                            </div>
+                            <span className={`text-[10px] leading-tight ${layout === item.id ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                              {item.desc}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 2. Photo Filters */}
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-2.5 flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5" />
+                        FILTER FOTO
+                      </label>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        {FILTERS.map((f) => (
+                          <button
+                            key={f.id}
+                            onClick={() => setFilter(f.id)}
+                            className={`p-2 rounded-xl border text-center transition flex flex-col items-center gap-1.5 cursor-pointer ${
+                              filter === f.id
+                                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                                : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200'
+                            }`}
+                          >
+                            <span className={`w-5 h-5 rounded-full ${f.preview} border border-white/40 shadow-2xs`} />
+                            <span className="text-[10px] font-bold tracking-tight">{f.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 3. Text Customization */}
+                    <div className="pt-2 border-t border-amber-200/50 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-1 block">JUDUL STRIP</label>
+                        <input
+                          type="text"
+                          value={titleText}
+                          onChange={(e) => setTitleText(e.target.value.toUpperCase())}
+                          maxLength={22}
+                          placeholder="POCKETBOOTH"
+                          className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 font-mono text-xs focus:outline-none focus:border-zinc-800 dark:focus:border-zinc-400 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-1 block">SUBTITEL / CAPTION</label>
+                        <input
+                          type="text"
+                          value={subText}
+                          onChange={(e) => setSubText(e.target.value)}
+                          maxLength={28}
+                          placeholder="SELF PHOTO STUDIO"
+                          className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs focus:outline-none focus:border-zinc-800 dark:focus:border-zinc-400 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4. Stickers & Date */}
+                    <div>
+                      <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-2 block flex items-center justify-between">
+                        <span>PILIH STIKER</span>
+                        <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 dark:text-zinc-400 text-[10px]">
+                          <input
+                            type="checkbox"
+                            checked={showDate}
+                            onChange={(e) => setShowDate(e.target.checked)}
+                            className="rounded text-zinc-900 dark:text-zinc-100 focus:ring-0"
+                          />
+                          Tampilkan Tanggal
+                        </label>
+                      </label>
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                        {STICKERS.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => setSticker(s.id)}
+                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1 flex-shrink-0 cursor-pointer ${
+                              sticker === s.id
+                                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                                : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700'
+                            }`}
+                          >
+                            <span>{s.symbol || '∅'}</span>
+                            <span className="text-[10px]">{s.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── RIGHT: Photostrip Print Preview (5 Cols) ── */}
@@ -1540,218 +1707,6 @@ export default function Photobooth() {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* ── 2. TAMPILAN: PILIH PAKET TEMA & STRIP LAYOUT ── */}
-        <div className={activeTab === "desain" ? "block" : "hidden"}>
-          <div className="max-w-4xl mx-auto flex flex-col gap-6">
-
-            {/* Section A: Pilih Paket Tema */}
-            <section className="max-w-4xl mx-auto mb-6 bg-white/75 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-amber-200/60 dark:border-zinc-800 shadow-sm transition-colors">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 px-1">
-              <div className="flex items-center gap-2">
-                <Box className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-200">PILIH PAKET TEMA</h2>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-zinc-800 text-amber-900 dark:text-amber-300 border border-amber-200/60 dark:border-zinc-700">
-                  {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).length} TEMA
-                </span>
-              </div>
-
-              {/* Category Filter Dropdown */}
-              <div className="relative inline-flex items-center">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="appearance-none pl-3 pr-8 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-zinc-100/10 focus:border-zinc-800 dark:focus:border-zinc-500 transition shadow-xs cursor-pointer"
-                >
-                  {THEME_CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
-              </div>
-            </div>
-
-            {/* Template Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-              {TEMPLATE_PACKAGES.filter((pkg) => selectedCategory === 'all' || pkg.category === selectedCategory).map((pkg) => {
-                const isSelected = selectedTemplate === pkg.id;
-                return (
-                  <button
-                    key={pkg.id}
-                    onClick={() => applyTemplate(pkg)}
-                    className={`p-2.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 group cursor-pointer active:scale-[0.98] ${
-                      isSelected
-                        ? 'border-zinc-900 dark:border-zinc-100 ring-2 ring-zinc-900/15 dark:ring-zinc-100/20 shadow-md bg-white dark:bg-zinc-800'
-                        : 'border-zinc-200/80 dark:border-zinc-800 bg-white/70 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between w-full">
-                      <span
-                        className="w-5 h-5 rounded-md border shadow-2xs flex-shrink-0"
-                        style={{ backgroundColor: pkg.bg, borderColor: pkg.border }}
-                        title={`Warna latar: ${pkg.bg}`}
-                      />
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 truncate max-w-[70px]">
-                          {pkg.badge}
-                        </span>
-                        {isSelected && (
-                          <span className="w-4 h-4 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className={`font-bold text-xs leading-tight truncate ${isSelected ? 'text-zinc-900 dark:text-zinc-100 font-extrabold' : 'text-zinc-800 dark:text-zinc-200'}`}>
-                        {pkg.name}
-                      </p>
-                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate leading-tight mt-0.5">{pkg.subtitle}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-            {/* Section B: Pilih Strip Layout */}
-            <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-amber-200/70 dark:border-zinc-800 flex flex-col gap-5 transition-colors">
-
-              {/* 1. Layout Mode */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-2.5 flex items-center gap-1.5">
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  PILIH STRIP LAYOUT
-                </label>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {LAYOUTS.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setLayout(item.id);
-                        if (selectedSlot >= item.slots) setSelectedSlot(0);
-                      }}
-                      className={`p-2.5 rounded-2xl border text-left transition flex flex-col justify-between h-20 cursor-pointer ${
-                        layout === item.id
-                          ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
-                          : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs">{item.label}</span>
-                        {layout === item.id && <Check className="w-3.5 h-3.5 text-white dark:text-zinc-900" />}
-                      </div>
-                      <span className={`text-[10px] leading-tight ${layout === item.id ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                        {item.desc}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 2. Photo Filters */}
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-2.5 flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5" />
-                  FILTER FOTO
-                </label>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {FILTERS.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => setFilter(f.id)}
-                      className={`p-2 rounded-xl border text-center transition flex flex-col items-center gap-1.5 cursor-pointer ${
-                        filter === f.id
-                          ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm'
-                          : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200'
-                      }`}
-                    >
-                      <span className={`w-5 h-5 rounded-full ${f.preview} border border-white/40 shadow-2xs`} />
-                      <span className="text-[10px] font-bold tracking-tight">{f.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 3. Text Customization */}
-              <div className="pt-2 border-t border-amber-200/50 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-1 block">JUDUL STRIP</label>
-                  <input
-                    type="text"
-                    value={titleText}
-                    onChange={(e) => setTitleText(e.target.value.toUpperCase())}
-                    maxLength={22}
-                    placeholder="POCKETBOOTH"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 font-mono text-xs focus:outline-none focus:border-zinc-800 dark:focus:border-zinc-400 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-1 block">SUBTITEL / CAPTION</label>
-                  <input
-                    type="text"
-                    value={subText}
-                    onChange={(e) => setSubText(e.target.value)}
-                    maxLength={28}
-                    placeholder="SELF PHOTO STUDIO"
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs focus:outline-none focus:border-zinc-800 dark:focus:border-zinc-400 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                  />
-                </div>
-              </div>
-
-              {/* 4. Stickers & Date */}
-              <div>
-                <label className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400 mb-2 block flex items-center justify-between">
-                  <span>PILIH STIKER</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-normal text-zinc-500 dark:text-zinc-400 text-[10px]">
-                    <input
-                      type="checkbox"
-                      checked={showDate}
-                      onChange={(e) => setShowDate(e.target.checked)}
-                      className="rounded text-zinc-900 dark:text-zinc-100 focus:ring-0"
-                    />
-                    Tampilkan Tanggal
-                  </label>
-                </label>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                  {STICKERS.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setSticker(s.id)}
-                      className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition flex items-center gap-1 flex-shrink-0 cursor-pointer ${
-                        sticker === s.id
-                          ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                          : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700'
-                      }`}
-                    >
-                      <span>{s.symbol || '∅'}</span>
-                      <span className="text-[10px]">{s.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Bottom action bar */}
-            <div className="flex items-center justify-between p-1">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
-                Tema aktif: <strong className="text-zinc-800 dark:text-zinc-200">{TEMPLATE_PACKAGES.find((p) => p.id === selectedTemplate)?.name || "Default"}</strong>
-              </span>
-              <button
-                onClick={() => setActiveTab("studio")}
-                className="px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Selesai & Buka Standby Mode</span>
-              </button>
-            </div>
-          </div>
-        </div>
       </main>
 
       {/* Hidden File Input */}
