@@ -21,10 +21,16 @@ import {
   Moon,
   Heart,
   X,
+  Share2,
+  Film,
+  Copy,
+  ExternalLink,
+  MessageCircle,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { savePhoto, getAllPhotos, deletePhoto, clearAllPhotos } from '../db/photoDb';
 import { playCountdownBeep, playShutterSound } from '../utils/audio';
+import { createGif } from '../utils/gif';
 
 // ── Background Ambient SVGs (Requested exact paths & classes) ──
 const Leaf = ({ className }) => (
@@ -564,16 +570,55 @@ const LAYOUTS = [
 
 // Aesthetic Photo Filters
 const FILTERS = [
-  { id: 'normal', name: 'Original', class: 'filter-normal', preview: 'bg-zinc-200' },
-  { id: 'bw', name: 'Monochrome', class: 'filter-bw', preview: 'bg-zinc-800' },
-  { id: 'retro70s', name: 'Retro 70s', class: 'filter-retro70s', preview: 'bg-amber-600' },
-  { id: 'vintage', name: 'Polaroid 90s', class: 'filter-vintage', preview: 'bg-yellow-700' },
-  { id: 'film', name: '35mm Film', class: 'filter-film', preview: 'bg-stone-700' },
-  { id: 'cyber', name: 'Cyber Neon', class: 'filter-cyber', preview: 'bg-cyan-500' },
-  { id: 'silver', name: 'Chrome Silver', class: 'filter-silver', preview: 'bg-slate-400' },
-  { id: 'soft', name: 'Soft Warm', class: 'filter-soft', preview: 'bg-rose-300' },
-  { id: 'cool', name: 'Cool Tone', class: 'filter-cool', preview: 'bg-sky-600' },
+  { id: 'normal', name: 'Original', class: 'filter-normal', preview: 'bg-zinc-200', css: 'none' },
+  { id: 'bw', name: 'Monochrome', class: 'filter-bw', preview: 'bg-zinc-800', css: 'grayscale(100%) contrast(125%) brightness(105%)' },
+  { id: 'retro70s', name: 'Retro 70s', class: 'filter-retro70s', preview: 'bg-amber-600', css: 'sepia(35%) contrast(120%) brightness(102%) saturate(145%) hue-rotate(-10deg)' },
+  { id: 'vintage', name: 'Polaroid 90s', class: 'filter-vintage', preview: 'bg-yellow-700', css: 'sepia(45%) contrast(110%) brightness(95%) saturate(120%)' },
+  { id: 'film', name: '35mm Film', class: 'filter-film', preview: 'bg-stone-700', css: 'contrast(115%) saturate(85%) brightness(100%) sepia(20%)' },
+  { id: 'cyber', name: 'Cyber Neon', class: 'filter-cyber', preview: 'bg-cyan-500', css: 'contrast(125%) brightness(105%) saturate(120%) hue-rotate(165deg)' },
+  { id: 'silver', name: 'Chrome Silver', class: 'filter-silver', preview: 'bg-slate-400', css: 'grayscale(85%) contrast(130%) brightness(108%)' },
+  { id: 'soft', name: 'Soft Warm', class: 'filter-soft', preview: 'bg-rose-300', css: 'contrast(95%) brightness(108%) saturate(90%)' },
+  { id: 'cool', name: 'Cool Tone', class: 'filter-cool', preview: 'bg-sky-600', css: 'hue-rotate(185deg) saturate(75%) contrast(110%) brightness(102%)' },
 ];
+
+// Helper to bake CSS filter onto image for print / download (html2canvas ignores CSS filter property)
+function applyFilterToImage(imgElement, filterCss) {
+  return new Promise((resolve) => {
+    if (!filterCss || filterCss === 'none') {
+      resolve(null);
+      return;
+    }
+    const render = (img) => {
+      try {
+        const w = img.naturalWidth || 1200;
+        const h = img.naturalHeight || 900;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.filter = filterCss;
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.95));
+      } catch (err) {
+        console.error('Gagal memproses filter cetak:', err);
+        resolve(null);
+      }
+    };
+
+    if (imgElement.complete && imgElement.naturalWidth > 0) {
+      render(imgElement);
+    } else {
+      const tempImg = new Image();
+      tempImg.onload = () => render(tempImg);
+      tempImg.onerror = () => resolve(null);
+      tempImg.src = imgElement.src;
+    }
+  });
+}
 
 // Decorative Stickers
 const STICKERS = [
@@ -644,12 +689,29 @@ export default function Photobooth() {
   // App & Capture States
   const [photos, setPhotos] = useState({});
   const [selectedSlot, setSelectedSlot] = useState(0);
+  const [slotGifFrames, setSlotGifFrames] = useState({});
+  const [captureType, setCaptureType] = useState('photo'); // 'photo' (default) | 'gif'
+  const [isRecordingGif, setIsRecordingGif] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [isAutoShooting, setIsAutoShooting] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isGeneratingGif, setIsGeneratingGif] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Animated GIF Preview Modal States
+  const [showGifModal, setShowGifModal] = useState(false);
+  const [generatedGifBlob, setGeneratedGifBlob] = useState(null);
+  const [gifPreviewUrl, setGifPreviewUrl] = useState('');
+
+  // Social Media Share Modal States
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareBlob, setShareBlob] = useState(null);
+  const [sharePreviewUrl, setSharePreviewUrl] = useState('');
+  const [copiedImage, setCopiedImage] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Support / QRIS Donation Modal State
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -888,6 +950,84 @@ export default function Photobooth() {
     [mirrorCamera, facingMode, soundEnabled]
   );
 
+  // Capture Live Animated GIF Burst from Video with 4:3 Crop
+  const captureGifBurst = useCallback(
+    async (slotIndex) => {
+      if (!videoRef.current) return null;
+
+      const video = videoRef.current;
+      const vw = video.videoWidth || 640;
+      const vh = video.videoHeight || 480;
+      const targetAspect = 4 / 3;
+      const vAspect = vw / vh;
+
+      let sx = 0;
+      let sy = 0;
+      let sw = vw;
+      let sh = vh;
+
+      if (vAspect > targetAspect) {
+        sw = Math.round(vh * targetAspect);
+        sx = Math.round((vw - sw) / 2);
+      } else if (vAspect < targetAspect) {
+        sh = Math.round(vw / targetAspect);
+        sy = Math.round((vh - sh) / 2);
+      }
+
+      // Compact 480x360 resolution for super-fast client-side GIF encoding
+      const frameWidth = 480;
+      const frameHeight = 360;
+      const c = document.createElement('canvas');
+      c.width = frameWidth;
+      c.height = frameHeight;
+      const ctx = c.getContext('2d');
+
+      setIsRecordingGif(true);
+      if (soundEnabled) playShutterSound();
+
+      const numFrames = 6;
+      const intervalMs = 130; // ~780ms recording time
+      const frames = [];
+      const frameDataUrls = [];
+
+      for (let i = 0; i < numFrames; i++) {
+        ctx.save();
+        if (mirrorCamera && facingMode === 'user') {
+          ctx.translate(frameWidth, 0);
+          ctx.scale(-1, 1);
+        }
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, frameWidth, frameHeight);
+        ctx.restore();
+
+        const imgData = ctx.getImageData(0, 0, frameWidth, frameHeight);
+        frames.push(imgData);
+        frameDataUrls.push(c.toDataURL('image/jpeg', 0.85));
+
+        if (i < numFrames - 1) {
+          await new Promise((res) => setTimeout(res, intervalMs));
+        }
+      }
+
+      setIsRecordingGif(false);
+      setIsFlashing(true);
+      setTimeout(() => setIsFlashing(false), 150);
+
+      const gifBlob = createGif(frames, { width: frameWidth, height: frameHeight, delay: intervalMs });
+
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(gifBlob);
+      });
+
+      await savePhoto(slotIndex, dataUrl);
+      setPhotos((prev) => ({ ...prev, [slotIndex]: dataUrl }));
+      setSlotGifFrames((prev) => ({ ...prev, [slotIndex]: frameDataUrls }));
+      return dataUrl;
+    },
+    [mirrorCamera, facingMode, soundEnabled]
+  );
+
   // Single Capture with Timer
   const handleCapture = useCallback(
     async (slotIndex) => {
@@ -907,13 +1047,18 @@ export default function Photobooth() {
         setCountdown(null);
       }
 
-      await captureFrame(slotIndex);
+      if (captureType === 'gif') {
+        await captureGifBurst(slotIndex);
+        showToast(`GIF slot ${slotIndex + 1} berhasil direkam! 🎞️✨`);
+      } else {
+        await captureFrame(slotIndex);
+        showToast(`Slot ${slotIndex + 1} berhasil diambil! ✨`);
+      }
 
       const nextSlot = (slotIndex + 1) % totalSlots;
       setSelectedSlot(nextSlot);
-      showToast(`Slot ${slotIndex + 1} berhasil diambil! ✨`);
     },
-    [isCameraActive, startCamera, timerSeconds, soundEnabled, captureFrame, totalSlots, showToast]
+    [isCameraActive, startCamera, timerSeconds, soundEnabled, captureType, captureGifBurst, captureFrame, totalSlots, showToast]
   );
 
   // Auto Burst / Series Mode
@@ -924,7 +1069,7 @@ export default function Photobooth() {
     }
 
     setIsAutoShooting(true);
-    showToast('Auto Series dimulai! Bersiap pose 📸');
+    showToast(captureType === 'gif' ? 'Auto Series GIF dimulai! Bersiap pose 🎞️' : 'Auto Series dimulai! Bersiap pose 📸');
 
     const effectiveTimer = timerSeconds === 0 ? 3 : timerSeconds;
 
@@ -940,21 +1085,36 @@ export default function Photobooth() {
       if (soundEnabled) playCountdownBeep(true);
       setCountdown(null);
 
-      await captureFrame(slot);
+      if (captureType === 'gif') {
+        await captureGifBurst(slot);
+      } else {
+        await captureFrame(slot);
+      }
       await new Promise((res) => setTimeout(res, 800));
     }
 
     setIsAutoShooting(false);
-    showToast('Selesai! Semua foto siap dicetak 🎉');
-  }, [isCameraActive, startCamera, timerSeconds, totalSlots, soundEnabled, captureFrame, showToast]);
+    setSelectedSlot(0);
+    showToast('Selesai! Semua slot siap dicetak 🎉');
+  }, [isCameraActive, startCamera, timerSeconds, totalSlots, soundEnabled, captureType, captureGifBurst, captureFrame, showToast]);
 
-  // Upload Local File with 4:3 Auto-Crop
+  // Upload Local File with 4:3 Auto-Crop (Supports PNG, JPG, & animated GIF)
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
+      // If animated GIF uploaded directly, preserve all animation frames
+      if (file.type === 'image/gif') {
+        const dataUrl = evt.target.result;
+        await savePhoto(selectedSlot, dataUrl);
+        setPhotos((prev) => ({ ...prev, [selectedSlot]: dataUrl }));
+        showToast(`GIF diunggah ke slot ${selectedSlot + 1} 🎞️`);
+        setSelectedSlot((prev) => (prev + 1) % totalSlots);
+        return;
+      }
+
       const img = new Image();
       img.onload = async () => {
         const c = document.createElement('canvas');
@@ -1002,6 +1162,11 @@ export default function Photobooth() {
       delete updated[slotIdx];
       return updated;
     });
+    setSlotGifFrames((prev) => {
+      const updated = { ...prev };
+      delete updated[slotIdx];
+      return updated;
+    });
     setSelectedSlot(slotIdx);
     showToast(`Slot ${slotIdx + 1} direset 🔄`);
   };
@@ -1011,21 +1176,131 @@ export default function Photobooth() {
     if (!window.confirm('Reset semua foto di photostrip?')) return;
     await clearAllPhotos();
     setPhotos({});
+    setSlotGifFrames({});
     setSelectedSlot(0);
     showToast('Semua slot dibersihkan');
   };
 
+  // Switch Capture Mode (Photo Still vs GIF Live) and reset photostrip preview
+  const handleSwitchCaptureType = async (newType) => {
+    if (newType === captureType) return;
+    setCaptureType(newType);
+    await clearAllPhotos();
+    setPhotos({});
+    setSlotGifFrames({});
+    setSelectedSlot(0);
+    showToast(newType === 'gif' ? 'Mode GIF aktif 🎞️' : 'Mode Foto aktif 📸');
+  };
+
+  // Generate High-Resolution Photostrip Blob
+  const generateStripBlob = async () => {
+    if (!stripRef.current) return null;
+
+    const targetWidth = layout === 'grid-4' ? 330 : 275;
+    const filterCss = currentFilterObj.css || 'none';
+
+    const canvas = await html2canvas(stripRef.current, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: frameBg,
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 1200,
+      onclone: async (clonedDoc) => {
+        const clonedElement = clonedDoc.querySelector('[data-strip-target="true"]');
+        if (clonedElement) {
+          clonedElement.style.width = `${targetWidth}px`;
+          clonedElement.style.minWidth = `${targetWidth}px`;
+          clonedElement.style.maxWidth = `${targetWidth}px`;
+          clonedElement.style.transform = 'none';
+        }
+
+        // 1. Deselect any active slot on print: remove rings & reset buttons, reset borders
+        clonedDoc.querySelectorAll('[data-active-ring="true"]').forEach((el) => el.remove());
+        clonedDoc.querySelectorAll('[data-reset-btn="true"]').forEach((el) => el.remove());
+        clonedDoc.querySelectorAll('[data-slot-frame="true"]').forEach((frame) => {
+          frame.style.borderColor = frameBorder;
+        });
+        clonedDoc.querySelectorAll('[data-slot-placeholder="true"]').forEach((el) => {
+          const slotIdx = el.getAttribute('data-slot-index');
+          if (slotIdx !== null) el.textContent = `SLOT ${Number(slotIdx) + 1}`;
+        });
+
+        // 2. Apply photo filter to all captured images in the photostrip
+        if (filterCss !== 'none') {
+          const clonedPhotos = Array.from(clonedDoc.querySelectorAll('img[data-slot-photo="true"]'));
+          const realPhotos = Array.from(stripRef.current.querySelectorAll('img[data-slot-photo="true"]'));
+
+          await Promise.all(
+            clonedPhotos.map(async (clonedImg, i) => {
+              const sourceImg = realPhotos[i] || clonedImg;
+              const filteredDataUrl = await applyFilterToImage(sourceImg, filterCss);
+              if (filteredDataUrl) {
+                clonedImg.src = filteredDataUrl;
+                clonedImg.className = clonedImg.className.replace(/filter-[a-z0-9]+/g, '');
+                try {
+                  await clonedImg.decode();
+                } catch (_) {}
+              }
+            })
+          );
+        }
+      },
+    });
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/png');
+    });
+  };
+
   // Download High-Resolution Photostrip
   const handleDownload = async () => {
-    if (!stripRef.current) return;
     try {
       setIsDownloading(true);
       showToast('Sedang merender photostrip...');
 
-      const targetWidth = layout === 'grid-4' ? 330 : 275;
+      const blob = await generateStripBlob();
+      if (!blob) throw new Error('Gagal merender strip');
 
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const filename = `pocketbooth-${selectedTemplate}-${dateStr}.png`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      showToast('Photostrip berhasil diunduh! 💖');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal mengunduh foto 😢');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Generate Animated GIF of the Full Photostrip Grid / Strip
+  const generatePhotoboothGridGif = async () => {
+    if (!stripRef.current) return null;
+
+    const targetWidth = layout === 'grid-4' ? 330 : 275;
+    const filterCss = currentFilterObj.css || 'none';
+    const hasGifSlots = Object.keys(slotGifFrames).length > 0;
+    const totalFrames = hasGifSlots ? 6 : Math.max(2, totalSlots);
+    const frameDelay = hasGifSlots ? 140 : 500;
+    const frames = [];
+    let gifWidth = 0;
+    let gifHeight = 0;
+
+    for (let k = 0; k < totalFrames; k++) {
       const canvas = await html2canvas(stripRef.current, {
-        scale: 3,
+        scale: 1.0,
         useCORS: true,
         allowTaint: true,
         backgroundColor: frameBg,
@@ -1033,7 +1308,7 @@ export default function Photobooth() {
         scrollX: 0,
         scrollY: 0,
         windowWidth: 1200,
-        onclone: (clonedDoc) => {
+        onclone: async (clonedDoc) => {
           const clonedElement = clonedDoc.querySelector('[data-strip-target="true"]');
           if (clonedElement) {
             clonedElement.style.width = `${targetWidth}px`;
@@ -1041,37 +1316,318 @@ export default function Photobooth() {
             clonedElement.style.maxWidth = `${targetWidth}px`;
             clonedElement.style.transform = 'none';
           }
+
+          // Remove active rings & retake buttons in cloned strip
+          clonedDoc.querySelectorAll('[data-active-ring="true"]').forEach((el) => el.remove());
+          clonedDoc.querySelectorAll('[data-reset-btn="true"]').forEach((el) => el.remove());
+          clonedDoc.querySelectorAll('[data-slot-placeholder="true"]').forEach((el) => {
+            const slotIdx = el.getAttribute('data-slot-index');
+            if (slotIdx !== null) el.textContent = `SLOT ${Number(slotIdx) + 1}`;
+          });
+
+          // Reset borders
+          clonedDoc.querySelectorAll('[data-slot-frame="true"]').forEach((frame) => {
+            frame.style.borderColor = frameBorder;
+          });
+
+          // Animate each slot's image frame
+          const clonedPhotos = Array.from(clonedDoc.querySelectorAll('img[data-slot-photo="true"]'));
+          await Promise.all(
+            clonedPhotos.map(async (clonedImg) => {
+              const slotIdx = Number(clonedImg.getAttribute('data-slot-index'));
+              const framesForSlot = slotGifFrames[slotIdx];
+
+              if (framesForSlot && framesForSlot.length > 0) {
+                clonedImg.src = framesForSlot[k % framesForSlot.length];
+              }
+
+              if (filterCss !== 'none') {
+                const filteredDataUrl = await applyFilterToImage(clonedImg, filterCss);
+                if (filteredDataUrl) {
+                  clonedImg.src = filteredDataUrl;
+                  clonedImg.className = clonedImg.className.replace(/filter-[a-z0-9]+/g, '');
+                }
+              }
+
+              try {
+                await clonedImg.decode();
+              } catch (_) {}
+            })
+          );
         },
       });
 
+      gifWidth = canvas.width;
+      gifHeight = canvas.height;
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      frames.push({
+        data: imgData.data,
+        delay: frameDelay,
+      });
+    }
+
+    if (frames.length === 0) return null;
+    return createGif(frames, { width: gifWidth, height: gifHeight, delay: frameDelay });
+  };
+
+  // Open Social Media Share Dialog
+  const handleShare = async () => {
+    try {
+      setIsSharing(true);
+      showToast(captureType === 'gif' ? 'Menyiapkan animasi GIF untuk dibagikan...' : 'Menyiapkan photostrip untuk dibagikan...');
+
+      let blob;
+      if (captureType === 'gif') {
+        blob = await generatePhotoboothGridGif();
+      } else {
+        blob = await generateStripBlob();
+      }
+      if (!blob) throw new Error('Gagal merender strip');
+
+      setShareBlob(blob);
+      if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+      const url = URL.createObjectURL(blob);
+      setSharePreviewUrl(url);
+
+      const isGif = blob.type === 'image/gif';
+      const ext = isGif ? 'gif' : 'png';
       const now = new Date();
       const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-      const filename = `pocketbooth-${selectedTemplate}-${dateStr}.png`;
+      const filename = `pocketbooth-${selectedTemplate}-${dateStr}.${ext}`;
+      const file = new File([blob], filename, { type: blob.type });
 
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          const link = document.createElement('a');
-          link.download = filename;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          showToast('Photostrip berhasil diunduh! 💖');
+      // Direct native share on mobile if supported (opens Instagram Stories, WhatsApp, TikTok directly)
+      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: titleText || 'Pocketbooth Photostrip',
+            text: 'Photostrip kenangan dari Pocketbooth! 📸✨',
+          });
           return;
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return;
         }
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = filename;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 3000);
-        showToast('Photostrip berhasil diunduh! 💖');
-      }, 'image/png');
+      }
+
+      setShowShareModal(true);
     } catch (err) {
       console.error(err);
-      showToast('Gagal mengunduh foto 😢');
+      showToast('Gagal menyiapkan foto untuk dibagikan 😢');
     } finally {
-      setIsDownloading(false);
+      setIsSharing(false);
+    }
+  };
+
+  // Direct Social Media Action Handler
+  const handleShareToPlatform = async (platform) => {
+    if (!shareBlob) return;
+    const isGif = shareBlob.type === 'image/gif';
+    const ext = isGif ? 'gif' : 'png';
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const filename = `pocketbooth-${selectedTemplate}-${dateStr}.${ext}`;
+    const file = new File([shareBlob], filename, { type: shareBlob.type });
+
+    const triggerDownload = () => {
+      const url = URL.createObjectURL(shareBlob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    };
+
+    const tryNativeShare = async () => {
+      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: titleText || 'Pocketbooth Photostrip',
+            text: 'Photostrip kenangan dari Pocketbooth! 📸✨',
+          });
+          return true;
+        } catch (err) {
+          if (err.name === 'AbortError') return true;
+          return false;
+        }
+      }
+      return false;
+    };
+
+    if (platform === 'native') {
+      const shared = await tryNativeShare();
+      if (!shared) {
+        triggerDownload();
+        showToast('Foto diunduh ke galeri! Siap dibagikan 📁');
+      }
+      return;
+    }
+
+    if (platform === 'instagram') {
+      const shared = await tryNativeShare();
+      if (shared) return;
+
+      triggerDownload();
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ [shareBlob.type]: shareBlob }),
+        ]);
+        showToast('Foto diunduh & disalin ke clipboard! Membuka Instagram... 📸');
+      } catch (_) {
+        showToast('Foto tersimpan di galeri! Membuka Instagram... 📸');
+      }
+
+      setTimeout(() => {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+          window.location.href = 'instagram://camera';
+          setTimeout(() => {
+            window.location.href = 'https://instagram.com';
+          }, 1500);
+        } else {
+          window.open('https://instagram.com', '_blank');
+        }
+      }, 500);
+      return;
+    }
+
+    if (platform === 'tiktok') {
+      const shared = await tryNativeShare();
+      if (shared) return;
+
+      triggerDownload();
+      showToast('Foto tersimpan di galeri! Membuka TikTok... 🎵');
+      setTimeout(() => {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+          window.location.href = 'tiktok://';
+          setTimeout(() => {
+            window.location.href = 'https://tiktok.com';
+          }, 1500);
+        } else {
+          window.open('https://tiktok.com', '_blank');
+        }
+      }, 500);
+      return;
+    }
+
+    if (platform === 'whatsapp') {
+      const shared = await tryNativeShare();
+      if (shared) return;
+
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ [shareBlob.type]: shareBlob }),
+        ]);
+        showToast('Gambar disalin! Tinggal tekan Ctrl+V di WhatsApp 💬');
+      } catch (_) {
+        triggerDownload();
+        showToast('Foto diunduh! Siap dikirim di WhatsApp 💬');
+      }
+      window.open('https://web.whatsapp.com', '_blank');
+      return;
+    }
+
+    if (platform === 'twitter') {
+      triggerDownload();
+      const tweetText = encodeURIComponent('Photostrip kenangan dari Pocketbooth! 📸✨ ' + window.location.href);
+      window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+      showToast('Foto diunduh & Twitter dibuka! Siap dilampirkan 𝕏');
+      return;
+    }
+  };
+
+  // Copy Image Directly to System Clipboard (for easy paste into IG/WA Web/Twitter)
+  const handleCopyImage = async () => {
+    try {
+      if (!shareBlob) return;
+      await navigator.clipboard.write([
+        new ClipboardItem({ [shareBlob.type]: shareBlob }),
+      ]);
+      setCopiedImage(true);
+      showToast('Gambar tersalin ke clipboard! 📋 Siap dipaste');
+      setTimeout(() => setCopiedImage(false), 2500);
+    } catch (err) {
+      console.error(err);
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopiedLink(true);
+        showToast('Link website tersalin ke clipboard! 📋');
+        setTimeout(() => setCopiedLink(false), 2500);
+      } catch (_) {
+        showToast('Gagal menyalin gambar otomatis');
+      }
+    }
+  };
+
+  // Open Animated GIF Preview Modal
+  const handleOpenGifPreview = async () => {
+    try {
+      setIsGeneratingGif(true);
+      showToast('Sedang membuat animasi GIF grid photostrip... 🎞️');
+
+      const gifBlob = await generatePhotoboothGridGif();
+      if (!gifBlob) throw new Error('Gagal merender GIF');
+
+      setGeneratedGifBlob(gifBlob);
+      if (gifPreviewUrl) URL.revokeObjectURL(gifPreviewUrl);
+      const url = URL.createObjectURL(gifBlob);
+      setGifPreviewUrl(url);
+      setShowGifModal(true);
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal membuat preview GIF 😢');
+    } finally {
+      setIsGeneratingGif(false);
+    }
+  };
+
+  // Download Generated GIF from Modal
+  const handleDownloadGeneratedGif = () => {
+    if (!generatedGifBlob) return;
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const filename = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
+
+    const url = URL.createObjectURL(generatedGifBlob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    showToast('GIF berhasil diunduh! 🎞️✨');
+  };
+
+  // Share Generated GIF
+  const handleShareGeneratedGif = async () => {
+    if (!generatedGifBlob) return;
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const filename = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
+    const file = new File([generatedGifBlob], filename, { type: 'image/gif' });
+
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: titleText || 'Pocketbooth Photostrip GIF',
+          text: 'Photostrip animasi GIF dari Pocketbooth! 📸✨',
+        });
+        showToast('GIF berhasil dibagikan! 🎉');
+      } else {
+        handleDownloadGeneratedGif();
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error(err);
+        showToast('Gagal membagikan GIF 😢');
+      }
     }
   };
 
@@ -1236,6 +1792,14 @@ export default function Photobooth() {
                   </div>
                 )}
 
+                {/* Live GIF Recording Badge */}
+                {isRecordingGif && (
+                  <div className="absolute top-4 left-4 z-30 flex items-center gap-2 px-3.5 py-1.5 bg-red-600/90 text-white rounded-full font-mono text-xs font-bold shadow-lg animate-pulse pointer-events-none">
+                    <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                    <span>MEREKAM GIF LIVE...</span>
+                  </div>
+                )}
+
                 {/* Viewfinder Rule-of-Thirds Grid */}
                 {isCameraActive && (
                   <div className="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3 opacity-15">
@@ -1293,32 +1857,71 @@ export default function Photobooth() {
                 )}
               </div>
 
+              {/* Mode Selector: FOTO STILL (Default) vs GIF LIVE */}
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <div className="flex items-center p-1 rounded-2xl bg-zinc-200/70 dark:bg-zinc-800/80 gap-1 text-[11px] font-bold font-mono">
+                  <button
+                    onClick={() => handleSwitchCaptureType('photo')}
+                    className={`px-3 py-1 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${
+                      captureType === 'photo'
+                        ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+                    }`}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>FOTO STILL</span>
+                  </button>
+                  <button
+                    onClick={() => handleSwitchCaptureType('gif')}
+                    className={`px-3 py-1 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${
+                      captureType === 'gif'
+                        ? 'bg-rose-500 text-white shadow-xs'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+                    }`}
+                  >
+                    <Film className="w-3.5 h-3.5" />
+                    <span>GIF LIVE</span>
+                  </button>
+                </div>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono hidden sm:inline">
+                  {captureType === 'gif' ? '⚡ Mode GIF aktif' : '📸 Mode Foto aktif'}
+                </span>
+              </div>
+
               {/* Shutter & Actions */}
-              <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
+              <div className="mt-3 flex flex-col sm:flex-row items-center gap-3">
                 {/* Auto Series */}
                 <button
                   onClick={handleAutoSeries}
-                  disabled={isAutoShooting}
+                  disabled={isAutoShooting || isRecordingGif}
                   className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-gradient-to-r from-amber-600 via-rose-500 to-indigo-600 hover:opacity-95 text-white font-bold text-xs tracking-wide shadow-md transition flex items-center justify-center gap-2 group disabled:opacity-50"
                   title="Ambil foto otomatis berurutan sesuai layout"
                 >
                   <Zap className="w-4 h-4 fill-current group-hover:scale-110 transition" />
-                  <span>{isAutoShooting ? 'MEMOTRET...' : 'AUTO SERIES'}</span>
+                  <span>
+                    {isAutoShooting
+                      ? 'MEMOTRET...'
+                      : captureType === 'gif'
+                      ? 'AUTO SERIES GIF'
+                      : 'AUTO SERIES'}
+                  </span>
                 </button>
 
                 {/* Primary Shutter */}
                 <button
                   onClick={() => handleCapture(selectedSlot)}
-                  disabled={isAutoShooting}
+                  disabled={isAutoShooting || isRecordingGif}
                   className="w-full flex-1 py-3.5 px-6 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-sm tracking-wide shadow-md transition flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
                 >
-                  <Camera className="w-4 h-4" />
+                  {captureType === 'gif' ? <Film className="w-4 h-4 text-rose-400" /> : <Camera className="w-4 h-4" />}
                   <span>
                     {!isCameraActive
                       ? 'BUKA KAMERA'
+                      : isRecordingGif
+                      ? 'MEREKAM GIF...'
                       : timerSeconds > 0
-                      ? `POTRET SLOT ${selectedSlot + 1} (${timerSeconds}s)`
-                      : `POTRET SLOT ${selectedSlot + 1}`}
+                      ? `${captureType === 'gif' ? 'REKAM GIF' : 'POTRET'} SLOT ${selectedSlot + 1} (${timerSeconds}s)`
+                      : `${captureType === 'gif' ? 'REKAM GIF' : 'POTRET'} SLOT ${selectedSlot + 1}`}
                   </span>
                 </button>
 
@@ -1581,18 +2184,40 @@ export default function Photobooth() {
 
             {/* ── RIGHT: Photostrip Print Preview (5 Cols) ── */}
             <div className="lg:col-span-5 flex flex-col items-center gap-4 lg:sticky lg:top-20">
-              <div className="w-full flex items-center justify-between px-1">
+              <div className="w-full flex flex-wrap items-center justify-between gap-2 px-1">
                 <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 font-mono tracking-wider">
                   PHOTOSTRIP PREVIEW ({photosCount}/{totalSlots})
                 </span>
-                <button
-                  onClick={handleDownload}
-                  disabled={isDownloading || photosCount === 0}
-                  className="px-5 py-2.5 rounded-full bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>{isDownloading ? "Menyimpan..." : "Download Print"}</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  {captureType === 'gif' && (
+                    <button
+                      onClick={handleOpenGifPreview}
+                      disabled={isDownloading || isSharing || isGeneratingGif || photosCount === 0}
+                      className="px-3.5 py-2 rounded-full border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold tracking-tight shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                      title="Buka Preview & Simpan Animasi GIF Photostrip"
+                    >
+                      <Film className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                      <span>{isGeneratingGif ? 'Rendering GIF...' : 'Preview / Simpan GIF'}</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleDownload}
+                    disabled={isDownloading || isSharing || isGeneratingGif || photosCount === 0}
+                    className="px-4 py-2 rounded-full bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{isDownloading ? 'Menyimpan...' : 'Download PNG'}</span>
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    disabled={isDownloading || isSharing || isGeneratingGif || photosCount === 0}
+                    className="px-3.5 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold tracking-tight shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                    title="Bagikan ke Instagram, WhatsApp, TikTok, dll."
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>{isSharing ? 'Berbagi...' : 'Bagikan'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* The Actual Captured Photostrip Card */}
@@ -1822,6 +2447,208 @@ export default function Photobooth() {
         </div>
       )}
 
+      {/* ── SOCIAL SHARE MODAL ── */}
+      {showShareModal && (
+        <div
+          onClick={() => setShowShareModal(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-amber-200/60 dark:border-zinc-800 relative flex flex-col items-center gap-3.5 animate-in zoom-in-95 duration-150"
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center justify-center transition cursor-pointer"
+              title="Tutup"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="text-center w-full pr-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-[11px] font-bold mb-1">
+                <Share2 className="w-3 h-3 text-rose-500" />
+                <span>Bagikan Photostrip</span>
+              </div>
+              <h3 className="font-bold text-base text-zinc-800 dark:text-zinc-100">
+                Kirim ke Media Sosial
+              </h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Salin gambar langsung atau bagikan via aplikasi
+              </p>
+            </div>
+
+            {/* Photostrip Preview Thumbnail */}
+            {sharePreviewUrl && (
+              <div className="w-full bg-stone-100 dark:bg-zinc-950 rounded-2xl p-2.5 border border-zinc-200 dark:border-zinc-800 flex justify-center max-h-44 overflow-hidden shadow-inner">
+                <img
+                  src={sharePreviewUrl}
+                  alt="Preview Photostrip"
+                  className="max-h-40 object-contain rounded-lg shadow-sm"
+                />
+              </div>
+            )}
+
+            {/* Primary Action: Copy Image to Clipboard */}
+            <button
+              onClick={handleCopyImage}
+              className="w-full py-3 px-4 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+            >
+              {copiedImage ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
+                  <span>Gambar Tersalin! (Tinggal Paste)</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Salin Gambar ke Clipboard</span>
+                </>
+              )}
+            </button>
+
+            {/* Direct Social Media Share Buttons */}
+            <div className="w-full grid grid-cols-2 gap-2">
+              {/* Instagram */}
+              <button
+                onClick={() => handleShareToPlatform('instagram')}
+                className="py-2.5 px-3 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-amber-500/10 hover:opacity-90 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer text-rose-700 dark:text-rose-300 shadow-2xs"
+                title="Buka Instagram (Otomatis simpan foto ke galeri)"
+              >
+                <svg className="w-4 h-4 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                </svg>
+                <span>Instagram</span>
+              </button>
+
+              {/* TikTok */}
+              <button
+                onClick={() => handleShareToPlatform('tiktok')}
+                className="py-2.5 px-3 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer text-zinc-900 dark:text-zinc-100 shadow-2xs"
+                title="Buka TikTok (Otomatis simpan foto ke galeri)"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.47 6.27 6.27 0 0 0 1.96-4.52V8.01a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.96-.44z"/>
+                </svg>
+                <span>TikTok</span>
+              </button>
+
+              {/* WhatsApp */}
+              <button
+                onClick={() => handleShareToPlatform('whatsapp')}
+                className="py-2.5 px-3 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold text-xs flex items-center justify-center gap-2 transition shadow-2xs cursor-pointer"
+                title="Kirim ke WhatsApp (Langsung lampirkan foto di HP)"
+              >
+                <MessageCircle className="w-4 h-4 fill-current" />
+                <span>WhatsApp</span>
+              </button>
+
+              {/* Twitter / X */}
+              <button
+                onClick={() => handleShareToPlatform('twitter')}
+                className="py-2.5 px-3 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 font-bold text-xs flex items-center justify-center gap-2 transition shadow-2xs cursor-pointer"
+                title="Kirim ke Twitter / X"
+              >
+                <span className="font-black text-sm">𝕏</span>
+                <span>Twitter / X</span>
+              </button>
+            </div>
+
+            {/* Mobile Native Share Drawer (Android & iOS direct app sharing) */}
+            <button
+              onClick={() => handleShareToPlatform('native')}
+              className="w-full py-2.5 px-3 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-sm"
+              title="Kirim file langsung ke Instagram Stories, TikTok, WA, dll."
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Kirim File via Menu Bawaan HP</span>
+            </button>
+
+            {/* Download Button in Modal */}
+            <button
+              onClick={() => {
+                setShowShareModal(false);
+                handleDownload();
+              }}
+              className="w-full py-1.5 px-3 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-semibold transition flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Unduh File PNG Biasa</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── GIF PREVIEW MODAL ── */}
+      {showGifModal && (
+        <div
+          onClick={() => setShowGifModal(false)}
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-rose-200/60 dark:border-zinc-800 relative flex flex-col items-center gap-3.5 animate-in zoom-in-95 duration-150"
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowGifModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center justify-center transition cursor-pointer"
+              title="Tutup"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="text-center w-full pr-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-[11px] font-bold mb-1">
+                <Film className="w-3.5 h-3.5 text-rose-500" />
+                <span>Live Photostrip GIF</span>
+              </div>
+              <h3 className="font-bold text-base text-zinc-800 dark:text-zinc-100">
+                Preview Animasi GIF
+              </h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Animasi photostrip berputar otomatis siap dibagikan atau disimpan
+              </p>
+            </div>
+
+            {/* Live Playing GIF Image */}
+            {gifPreviewUrl && (
+              <div className="w-full bg-stone-100 dark:bg-zinc-950 rounded-2xl p-2 border border-zinc-200 dark:border-zinc-800 flex justify-center max-h-[55vh] overflow-hidden shadow-inner">
+                <img
+                  src={gifPreviewUrl}
+                  alt="Live Photostrip GIF Preview"
+                  className="max-h-[52vh] object-contain rounded-xl shadow-md"
+                />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="w-full flex items-center gap-2">
+              <button
+                onClick={handleDownloadGeneratedGif}
+                className="flex-1 py-3 px-4 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download GIF</span>
+              </button>
+              <button
+                onClick={handleShareGeneratedGif}
+                className="py-3 px-4 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                title="Bagikan GIF"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Bagikan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hidden File Input */}
       <input
         ref={fileInputRef}
@@ -1839,9 +2666,12 @@ export default function Photobooth() {
 
 // Individual Photo Slot Frame with Washi Tape
 function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textColor, isActive, washiType, onSelect, onReset }) {
+  const isGif = Boolean(photo && typeof photo === 'string' && photo.startsWith('data:image/gif'));
+
   return (
     <div
       onClick={onSelect}
+      data-slot-frame="true"
       className="relative w-full rounded-xl overflow-visible cursor-pointer transition group border"
       style={{
         paddingTop: '75%', // Guarantees exact 4:3 box in every browser and html2canvas (3/4 = 75%)
@@ -1857,13 +2687,28 @@ function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textCo
         {photo ? (
           <>
             <img
+              key={photo.slice(0, 80)}
+              data-slot-photo="true"
+              data-slot-index={index}
               src={photo}
               alt={`Slot ${index + 1}`}
               className={`w-full h-full object-cover block ${filterClass}`}
               style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
             />
+            {/* GIF indicator badge */}
+            {isGif && (
+              <span
+                data-html2canvas-ignore="true"
+                className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-xs text-white text-[9px] font-mono font-bold tracking-wider pointer-events-none z-20 flex items-center gap-1 shadow-xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                GIF
+              </span>
+            )}
             {/* Retake Button */}
             <button
+              data-html2canvas-ignore="true"
+              data-reset-btn="true"
               onClick={onReset}
               className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow hover:bg-black z-30"
               title="Reset slot ini"
@@ -1874,7 +2719,11 @@ function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textCo
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1 transition" style={{ color: textColor }}>
             <Camera className="w-5 h-5 opacity-40" />
-            <span className="font-mono text-[9px] font-bold tracking-wider opacity-60">
+            <span
+              data-slot-placeholder="true"
+              data-slot-index={index}
+              className="font-mono text-[9px] font-bold tracking-wider opacity-60"
+            >
               {isActive ? 'READY' : `SLOT ${index + 1}`}
             </span>
           </div>
@@ -1883,7 +2732,11 @@ function PhotoSlot({ index, photo, filterClass, accentColor, borderColor, textCo
 
       {/* Active Indicator Ring */}
       {isActive && (
-        <div className="absolute inset-0 border-2 border-zinc-900 pointer-events-none rounded-xl z-20" />
+        <div
+          data-html2canvas-ignore="true"
+          data-active-ring="true"
+          className="absolute inset-0 border-2 border-zinc-900 pointer-events-none rounded-xl z-20"
+        />
       )}
     </div>
   );
