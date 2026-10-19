@@ -696,15 +696,13 @@ export default function Photobooth() {
   const [countdown, setCountdown] = useState(null);
   const [isAutoShooting, setIsAutoShooting] = useState(false);
   const [isFlashing, setIsFlashing] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingPng, setIsDownloadingPng] = useState(false);
+  const [isDownloadingGif, setIsDownloadingGif] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [isGeneratingGif, setIsGeneratingGif] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Animated GIF Preview Modal States
-  const [showGifModal, setShowGifModal] = useState(false);
+  // Cached Generated GIF Blob
   const [generatedGifBlob, setGeneratedGifBlob] = useState(null);
-  const [gifPreviewUrl, setGifPreviewUrl] = useState('');
 
   // Social Media Share Modal States
   const [showShareModal, setShowShareModal] = useState(false);
@@ -779,7 +777,7 @@ export default function Photobooth() {
   // Invalidate cached GIF when strip content changes
   useEffect(() => {
     setGeneratedGifBlob(null);
-  }, [photos, slotGifFrames, selectedTemplate, currentFilter, frameBg, frameBorder, washiType, ornamentType, titleText, dateEnabled, layout]);
+  }, [photos, slotGifFrames, selectedTemplate, filter, frameBg, frameBorder, washiType, ornamentType, titleText, showDate, layout]);
 
   // Stop Camera Helper
   const stopCamera = useCallback(() => {
@@ -1260,11 +1258,11 @@ export default function Photobooth() {
     });
   };
 
-  // Download High-Resolution Photostrip
-  const handleDownload = async () => {
+  // Download High-Resolution Photostrip PNG directly
+  const handleDownloadPng = async () => {
     try {
-      setIsDownloading(true);
-      showToast('Sedang merender photostrip...');
+      setIsDownloadingPng(true);
+      showToast('Sedang merender photostrip PNG... 📸');
 
       const blob = await generateStripBlob();
       if (!blob) throw new Error('Gagal merender strip');
@@ -1281,12 +1279,48 @@ export default function Photobooth() {
       link.click();
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 3000);
-      showToast('Photostrip berhasil diunduh! 💖');
+      showToast('Photostrip PNG berhasil diunduh! 💖');
     } catch (err) {
       console.error(err);
       showToast('Gagal mengunduh foto 😢');
     } finally {
-      setIsDownloading(false);
+      setIsDownloadingPng(false);
+    }
+  };
+
+  // Download Animated Photostrip GIF directly without popup
+  const handleDownloadGif = async () => {
+    try {
+      setIsDownloadingGif(true);
+      showToast('Sedang merender animasi GIF... 🎞️');
+
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const filename = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
+
+      let blob = generatedGifBlob;
+      if (!blob) {
+        blob = await generatePhotoboothGridGif();
+        if (blob) {
+          setGeneratedGifBlob(blob);
+        }
+      }
+      if (!blob) throw new Error('Gagal merender GIF');
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      showToast('Animasi GIF berhasil diunduh! 🎞️✨');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal mengunduh GIF 😢');
+    } finally {
+      setIsDownloadingGif(false);
     }
   };
 
@@ -1392,8 +1426,6 @@ export default function Photobooth() {
             blob = await generatePhotoboothGridGif();
             if (blob) {
               setGeneratedGifBlob(blob);
-              if (gifPreviewUrl) URL.revokeObjectURL(gifPreviewUrl);
-              setGifPreviewUrl(URL.createObjectURL(blob));
             }
           }
         } else {
@@ -1619,53 +1651,6 @@ export default function Photobooth() {
         showToast('Gagal menyalin gambar otomatis');
       }
     }
-  };
-
-  // Open Animated GIF Preview Modal
-  const handleOpenGifPreview = async () => {
-    try {
-      setIsGeneratingGif(true);
-      showToast('Sedang membuat animasi GIF grid photostrip... 🎞️');
-
-      const gifBlob = await generatePhotoboothGridGif();
-      if (!gifBlob) throw new Error('Gagal merender GIF');
-
-      setGeneratedGifBlob(gifBlob);
-      if (gifPreviewUrl) URL.revokeObjectURL(gifPreviewUrl);
-      const url = URL.createObjectURL(gifBlob);
-      setGifPreviewUrl(url);
-      setShowGifModal(true);
-    } catch (err) {
-      console.error(err);
-      showToast('Gagal membuat preview GIF 😢');
-    } finally {
-      setIsGeneratingGif(false);
-    }
-  };
-
-  // Download Generated GIF from Modal
-  const handleDownloadGeneratedGif = () => {
-    if (!generatedGifBlob) return;
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const filename = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
-
-    const url = URL.createObjectURL(generatedGifBlob);
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-    showToast('GIF berhasil diunduh! 🎞️✨');
-  };
-
-  // Share Generated GIF
-  const handleShareGeneratedGif = async () => {
-    if (!generatedGifBlob) return;
-    setShowGifModal(false);
-    await handleShare(generatedGifBlob);
   };
 
   const todayFormatted = (() => {
@@ -2226,38 +2211,55 @@ export default function Photobooth() {
                   PHOTOSTRIP PREVIEW ({photosCount}/{totalSlots})
                 </span>
                 <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                  {captureType === 'gif' && (
-                    <button
-                      onClick={handleOpenGifPreview}
-                      disabled={isDownloading || isSharing || isGeneratingGif || photosCount === 0}
-                      className="px-3.5 py-2 rounded-full border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold tracking-tight shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
-                      title="Buka Preview & Simpan Animasi GIF Photostrip"
-                    >
-                      <Film className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-                      <span>{isGeneratingGif ? 'Rendering GIF...' : 'Preview / Simpan GIF'}</span>
-                    </button>
+                  {captureType === 'gif' ? (
+                    <>
+                      {/* Download GIF Button (Hanya tampil di mode GIF) */}
+                      <button
+                        onClick={handleDownloadGif}
+                        disabled={isDownloadingGif || isSharing || photosCount === 0}
+                        className="px-4 py-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-95"
+                        title="Download animasi GIF photostrip"
+                      >
+                        <Film className="w-3.5 h-3.5" />
+                        <span>{isDownloadingGif ? 'Merender GIF...' : 'Download GIF'}</span>
+                      </button>
+
+                      {/* Share GIF Button (Hanya tampil di mode GIF) */}
+                      <button
+                        onClick={() => handleShare()}
+                        disabled={isDownloadingGif || isSharing || photosCount === 0}
+                        className="px-3.5 py-2 rounded-full border border-rose-300 dark:border-rose-800 bg-white dark:bg-zinc-800 hover:bg-rose-50 dark:hover:bg-zinc-700 text-rose-700 dark:text-rose-300 text-xs font-bold tracking-tight shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-95"
+                        title="Bagikan animasi GIF ke media sosial"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>{isSharing ? 'Menyiapkan GIF...' : 'Bagikan GIF'}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Download PNG Button (Hanya tampil di mode Foto) */}
+                      <button
+                        onClick={handleDownloadPng}
+                        disabled={isDownloadingPng || isSharing || photosCount === 0}
+                        className="px-4 py-2 rounded-full bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-95"
+                        title="Download foto strip PNG"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{isDownloadingPng ? 'Menyimpan...' : 'Download PNG'}</span>
+                      </button>
+
+                      {/* Share PNG Button (Hanya tampil di mode Foto) */}
+                      <button
+                        onClick={() => handleShare()}
+                        disabled={isDownloadingPng || isSharing || photosCount === 0}
+                        className="px-3.5 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold tracking-tight shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-95"
+                        title="Bagikan ke Instagram, WhatsApp, TikTok, dll."
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>{isSharing ? 'Berbagi...' : 'Bagikan'}</span>
+                      </button>
+                    </>
                   )}
-                  <button
-                    onClick={handleDownload}
-                    disabled={isDownloading || isSharing || isGeneratingGif || photosCount === 0}
-                    className="px-4 py-2 rounded-full bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold tracking-tight shadow-md transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>{isDownloading ? 'Menyimpan...' : 'Download PNG'}</span>
-                  </button>
-                  <button
-                    onClick={() => handleShare()}
-                    disabled={isDownloading || isSharing || isGeneratingGif || photosCount === 0}
-                    className="px-3.5 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold tracking-tight shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
-                    title={captureType === 'gif' ? 'Bagikan animasi GIF ke media sosial' : 'Bagikan ke Instagram, WhatsApp, TikTok, dll.'}
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    <span>
-                      {isSharing
-                        ? (captureType === 'gif' ? 'Menyiapkan GIF...' : 'Berbagi...')
-                        : (captureType === 'gif' ? 'Bagikan GIF' : 'Bagikan')}
-                    </span>
-                  </button>
                 </div>
               </div>
 
@@ -2640,19 +2642,9 @@ export default function Photobooth() {
               onClick={() => {
                 setShowShareModal(false);
                 if (shareBlob?.type === 'image/gif') {
-                  const url = URL.createObjectURL(shareBlob);
-                  const link = document.createElement('a');
-                  const now = new Date();
-                  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-                  link.download = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
-                  link.href = url;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  setTimeout(() => URL.revokeObjectURL(url), 3000);
-                  showToast('GIF berhasil diunduh! 🎞️✨');
+                  handleDownloadGif();
                 } else {
-                  handleDownload();
+                  handleDownloadPng();
                 }
               }}
               className="w-full py-1.5 px-3 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-semibold transition flex items-center justify-center gap-1 cursor-pointer"
@@ -2660,72 +2652,6 @@ export default function Photobooth() {
               <Download className="w-3.5 h-3.5" />
               <span>{shareBlob?.type === 'image/gif' ? 'Download File Animasi GIF' : 'Unduh File PNG Biasa'}</span>
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── GIF PREVIEW MODAL ── */}
-      {showGifModal && (
-        <div
-          onClick={() => setShowGifModal(false)}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-rose-200/60 dark:border-zinc-800 relative flex flex-col items-center gap-3.5 animate-in zoom-in-95 duration-150"
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => setShowGifModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center justify-center transition cursor-pointer"
-              title="Tutup"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Modal Header */}
-            <div className="text-center w-full pr-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-[11px] font-bold mb-1">
-                <Film className="w-3.5 h-3.5 text-rose-500" />
-                <span>Live Photostrip GIF</span>
-              </div>
-              <h3 className="font-bold text-base text-zinc-800 dark:text-zinc-100">
-                Preview Animasi GIF
-              </h3>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Animasi photostrip berputar otomatis siap dibagikan atau disimpan
-              </p>
-            </div>
-
-            {/* Live Playing GIF Image */}
-            {gifPreviewUrl && (
-              <div className="w-full bg-stone-100 dark:bg-zinc-950 rounded-2xl p-2 border border-zinc-200 dark:border-zinc-800 flex justify-center max-h-[55vh] overflow-hidden shadow-inner">
-                <img
-                  src={gifPreviewUrl}
-                  alt="Live Photostrip GIF Preview"
-                  className="max-h-[52vh] object-contain rounded-xl shadow-md"
-                />
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="w-full flex items-center gap-2">
-              <button
-                onClick={handleDownloadGeneratedGif}
-                className="flex-1 py-3 px-4 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download GIF</span>
-              </button>
-              <button
-                onClick={handleShareGeneratedGif}
-                className="py-3 px-4 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
-                title="Bagikan GIF"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>Bagikan</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
