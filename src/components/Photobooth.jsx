@@ -776,6 +776,11 @@ export default function Photobooth() {
     setPhotos({});
   }, []);
 
+  // Invalidate cached GIF when strip content changes
+  useEffect(() => {
+    setGeneratedGifBlob(null);
+  }, [photos, slotGifFrames, selectedTemplate, currentFilter, frameBg, frameBorder, washiType, ornamentType, titleText, dateEnabled, layout]);
+
   // Stop Camera Helper
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -1372,16 +1377,28 @@ export default function Photobooth() {
   };
 
   // Open Social Media Share Dialog
-  const handleShare = async () => {
+  const handleShare = async (overrideBlob = null) => {
     try {
       setIsSharing(true);
-      showToast(captureType === 'gif' ? 'Menyiapkan animasi GIF untuk dibagikan...' : 'Menyiapkan photostrip untuk dibagikan...');
+      const isGifMode = overrideBlob ? overrideBlob.type === 'image/gif' : captureType === 'gif';
+      showToast(isGifMode ? 'Menyiapkan animasi GIF untuk dibagikan... 🎞️' : 'Menyiapkan photostrip untuk dibagikan...');
 
-      let blob;
-      if (captureType === 'gif') {
-        blob = await generatePhotoboothGridGif();
-      } else {
-        blob = await generateStripBlob();
+      let blob = overrideBlob;
+      if (!blob) {
+        if (captureType === 'gif') {
+          if (generatedGifBlob) {
+            blob = generatedGifBlob;
+          } else {
+            blob = await generatePhotoboothGridGif();
+            if (blob) {
+              setGeneratedGifBlob(blob);
+              if (gifPreviewUrl) URL.revokeObjectURL(gifPreviewUrl);
+              setGifPreviewUrl(URL.createObjectURL(blob));
+            }
+          }
+        } else {
+          blob = await generateStripBlob();
+        }
       }
       if (!blob) throw new Error('Gagal merender strip');
 
@@ -1402,12 +1419,15 @@ export default function Photobooth() {
         try {
           await navigator.share({
             files: [file],
-            title: titleText || 'Pocketbooth Photostrip',
-            text: 'Photostrip kenangan dari Pocketbooth! 📸✨',
+            title: titleText || (isGif ? 'Pocketbooth Photostrip GIF' : 'Pocketbooth Photostrip'),
+            text: isGif ? 'Photostrip animasi GIF dari Pocketbooth! 📸✨' : 'Photostrip kenangan dari Pocketbooth! 📸✨',
           });
           return;
         } catch (shareErr) {
-          if (shareErr.name === 'AbortError') return;
+          if (shareErr.name === 'AbortError') {
+            setShowShareModal(true);
+            return;
+          }
         }
       }
 
@@ -1446,8 +1466,8 @@ export default function Photobooth() {
         try {
           await navigator.share({
             files: [file],
-            title: titleText || 'Pocketbooth Photostrip',
-            text: 'Photostrip kenangan dari Pocketbooth! 📸✨',
+            title: titleText || (isGif ? 'Pocketbooth Photostrip GIF' : 'Pocketbooth Photostrip'),
+            text: isGif ? 'Photostrip animasi GIF dari Pocketbooth! 📸✨' : 'Photostrip kenangan dari Pocketbooth! 📸✨',
           });
           return true;
         } catch (err) {
@@ -1462,7 +1482,7 @@ export default function Photobooth() {
       const shared = await tryNativeShare();
       if (!shared) {
         triggerDownload();
-        showToast('Foto diunduh ke galeri! Siap dibagikan 📁');
+        showToast(isGif ? 'GIF diunduh ke galeri! Siap dibagikan 📁' : 'Foto diunduh ke galeri! Siap dibagikan 📁');
       }
       return;
     }
@@ -1472,13 +1492,17 @@ export default function Photobooth() {
       if (shared) return;
 
       triggerDownload();
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ [shareBlob.type]: shareBlob }),
-        ]);
-        showToast('Foto diunduh & disalin ke clipboard! Membuka Instagram... 📸');
-      } catch (_) {
-        showToast('Foto tersimpan di galeri! Membuka Instagram... 📸');
+      if (!isGif) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ [shareBlob.type]: shareBlob }),
+          ]);
+          showToast('Foto diunduh & disalin ke clipboard! Membuka Instagram... 📸');
+        } catch (_) {
+          showToast('Foto tersimpan di galeri! Membuka Instagram... 📸');
+        }
+      } else {
+        showToast('GIF diunduh ke galeri! Membuka Instagram... 📸');
       }
 
       setTimeout(() => {
@@ -1500,7 +1524,7 @@ export default function Photobooth() {
       if (shared) return;
 
       triggerDownload();
-      showToast('Foto tersimpan di galeri! Membuka TikTok... 🎵');
+      showToast(isGif ? 'GIF tersimpan di galeri! Membuka TikTok... 🎵' : 'Foto tersimpan di galeri! Membuka TikTok... 🎵');
       setTimeout(() => {
         const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         if (isMobile) {
@@ -1519,32 +1543,65 @@ export default function Photobooth() {
       const shared = await tryNativeShare();
       if (shared) return;
 
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ [shareBlob.type]: shareBlob }),
-        ]);
-        showToast('Gambar disalin! Tinggal tekan Ctrl+V di WhatsApp 💬');
-      } catch (_) {
-        triggerDownload();
-        showToast('Foto diunduh! Siap dikirim di WhatsApp 💬');
+      triggerDownload();
+      if (!isGif) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ [shareBlob.type]: shareBlob }),
+          ]);
+          showToast('Gambar disalin! Tinggal paste di WhatsApp 💬');
+        } catch (_) {
+          showToast('Foto diunduh! Siap dikirim di WhatsApp 💬');
+        }
+      } else {
+        showToast('GIF diunduh! Siap dikirim di WhatsApp 💬');
       }
-      window.open('https://web.whatsapp.com', '_blank');
+
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = 'whatsapp://send?text=' + encodeURIComponent((isGif ? 'Photostrip animasi GIF dari Pocketbooth! 📸✨ ' : 'Photostrip kenangan dari Pocketbooth! 📸✨ ') + window.location.href);
+      } else {
+        window.open('https://web.whatsapp.com', '_blank');
+      }
       return;
     }
 
     if (platform === 'twitter') {
       triggerDownload();
-      const tweetText = encodeURIComponent('Photostrip kenangan dari Pocketbooth! 📸✨ ' + window.location.href);
+      const tweetText = encodeURIComponent(
+        (isGif ? 'Photostrip animasi GIF dari Pocketbooth! 📸✨ ' : 'Photostrip kenangan dari Pocketbooth! 📸✨ ') +
+        window.location.href
+      );
       window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
-      showToast('Foto diunduh & Twitter dibuka! Siap dilampirkan 𝕏');
+      showToast(isGif ? 'GIF diunduh & Twitter dibuka! Siap dilampirkan 𝕏' : 'Foto diunduh & Twitter dibuka! Siap dilampirkan 𝕏');
       return;
     }
   };
 
-  // Copy Image Directly to System Clipboard (for easy paste into IG/WA Web/Twitter)
+  // Copy Image Directly to System Clipboard or download GIF (since browsers reject image/gif in clipboard)
   const handleCopyImage = async () => {
     try {
       if (!shareBlob) return;
+      const isGif = shareBlob.type === 'image/gif';
+      if (isGif) {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const filename = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
+        const url = URL.createObjectURL(shareBlob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+        setCopiedImage(true);
+        showToast('Animasi GIF berhasil diunduh ke galeri! Siap dibagikan 🎞️');
+        setTimeout(() => setCopiedImage(false), 2500);
+        return;
+      }
+
       await navigator.clipboard.write([
         new ClipboardItem({ [shareBlob.type]: shareBlob }),
       ]);
@@ -1607,28 +1664,8 @@ export default function Photobooth() {
   // Share Generated GIF
   const handleShareGeneratedGif = async () => {
     if (!generatedGifBlob) return;
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const filename = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
-    const file = new File([generatedGifBlob], filename, { type: 'image/gif' });
-
-    try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: titleText || 'Pocketbooth Photostrip GIF',
-          text: 'Photostrip animasi GIF dari Pocketbooth! 📸✨',
-        });
-        showToast('GIF berhasil dibagikan! 🎉');
-      } else {
-        handleDownloadGeneratedGif();
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error(err);
-        showToast('Gagal membagikan GIF 😢');
-      }
-    }
+    setShowGifModal(false);
+    await handleShare(generatedGifBlob);
   };
 
   const todayFormatted = (() => {
@@ -2209,13 +2246,17 @@ export default function Photobooth() {
                     <span>{isDownloading ? 'Menyimpan...' : 'Download PNG'}</span>
                   </button>
                   <button
-                    onClick={handleShare}
+                    onClick={() => handleShare()}
                     disabled={isDownloading || isSharing || isGeneratingGif || photosCount === 0}
                     className="px-3.5 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold tracking-tight shadow-xs transition flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
-                    title="Bagikan ke Instagram, WhatsApp, TikTok, dll."
+                    title={captureType === 'gif' ? 'Bagikan animasi GIF ke media sosial' : 'Bagikan ke Instagram, WhatsApp, TikTok, dll.'}
                   >
                     <Share2 className="w-3.5 h-3.5" />
-                    <span>{isSharing ? 'Berbagi...' : 'Bagikan'}</span>
+                    <span>
+                      {isSharing
+                        ? (captureType === 'gif' ? 'Menyiapkan GIF...' : 'Berbagi...')
+                        : (captureType === 'gif' ? 'Bagikan GIF' : 'Bagikan')}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -2469,29 +2510,46 @@ export default function Photobooth() {
             {/* Modal Header */}
             <div className="text-center w-full pr-6">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-[11px] font-bold mb-1">
-                <Share2 className="w-3 h-3 text-rose-500" />
-                <span>Bagikan Photostrip</span>
+                {shareBlob?.type === 'image/gif' ? (
+                  <>
+                    <Film className="w-3 h-3 text-rose-500" />
+                    <span>Bagikan Animasi GIF</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3 h-3 text-rose-500" />
+                    <span>Bagikan Photostrip</span>
+                  </>
+                )}
               </div>
               <h3 className="font-bold text-base text-zinc-800 dark:text-zinc-100">
-                Kirim ke Media Sosial
+                {shareBlob?.type === 'image/gif' ? 'Kirim Animasi GIF' : 'Kirim ke Media Sosial'}
               </h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Salin gambar langsung atau bagikan via aplikasi
+                {shareBlob?.type === 'image/gif'
+                  ? 'Simpan animasi GIF atau bagikan langsung via aplikasi'
+                  : 'Salin gambar langsung atau bagikan via aplikasi'}
               </p>
             </div>
 
             {/* Photostrip Preview Thumbnail */}
             {sharePreviewUrl && (
-              <div className="w-full bg-stone-100 dark:bg-zinc-950 rounded-2xl p-2.5 border border-zinc-200 dark:border-zinc-800 flex justify-center max-h-44 overflow-hidden shadow-inner">
+              <div className="w-full bg-stone-100 dark:bg-zinc-950 rounded-2xl p-2.5 border border-zinc-200 dark:border-zinc-800 flex justify-center max-h-48 overflow-hidden shadow-inner relative">
                 <img
                   src={sharePreviewUrl}
-                  alt="Preview Photostrip"
-                  className="max-h-40 object-contain rounded-lg shadow-sm"
+                  alt={shareBlob?.type === 'image/gif' ? 'Preview Animasi GIF' : 'Preview Photostrip'}
+                  className="max-h-44 object-contain rounded-lg shadow-sm"
                 />
+                {shareBlob?.type === 'image/gif' && (
+                  <span className="absolute bottom-3.5 right-3.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-white text-[10px] font-mono font-bold tracking-wider flex items-center gap-1 shadow-xs pointer-events-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                    GIF
+                  </span>
+                )}
               </div>
             )}
 
-            {/* Primary Action: Copy Image to Clipboard */}
+            {/* Primary Action Button: Copy Image (PNG) or Download GIF */}
             <button
               onClick={handleCopyImage}
               className="w-full py-3 px-4 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
@@ -2499,12 +2557,21 @@ export default function Photobooth() {
               {copiedImage ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
-                  <span>Gambar Tersalin! (Tinggal Paste)</span>
+                  <span>{shareBlob?.type === 'image/gif' ? 'GIF Terunduh! (Siap Dikirim)' : 'Gambar Tersalin! (Tinggal Paste)'}</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4" />
-                  <span>Salin Gambar ke Clipboard</span>
+                  {shareBlob?.type === 'image/gif' ? (
+                    <>
+                      <Download className="w-4 h-4 text-rose-400" />
+                      <span>Simpan Animasi GIF ke Galeri</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Salin Gambar ke Clipboard</span>
+                    </>
+                  )}
                 </>
               )}
             </button>
@@ -2515,7 +2582,7 @@ export default function Photobooth() {
               <button
                 onClick={() => handleShareToPlatform('instagram')}
                 className="py-2.5 px-3 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-gradient-to-r from-rose-500/10 via-pink-500/10 to-amber-500/10 hover:opacity-90 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer text-rose-700 dark:text-rose-300 shadow-2xs"
-                title="Buka Instagram (Otomatis simpan foto ke galeri)"
+                title={shareBlob?.type === 'image/gif' ? 'Buka Instagram (Otomatis simpan GIF ke galeri)' : 'Buka Instagram (Otomatis simpan foto ke galeri)'}
               >
                 <svg className="w-4 h-4 fill-none stroke-current" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
@@ -2529,7 +2596,7 @@ export default function Photobooth() {
               <button
                 onClick={() => handleShareToPlatform('tiktok')}
                 className="py-2.5 px-3 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer text-zinc-900 dark:text-zinc-100 shadow-2xs"
-                title="Buka TikTok (Otomatis simpan foto ke galeri)"
+                title={shareBlob?.type === 'image/gif' ? 'Buka TikTok (Otomatis simpan GIF ke galeri)' : 'Buka TikTok (Otomatis simpan foto ke galeri)'}
               >
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.47 6.27 6.27 0 0 0 1.96-4.52V8.01a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.96-.44z"/>
@@ -2541,7 +2608,7 @@ export default function Photobooth() {
               <button
                 onClick={() => handleShareToPlatform('whatsapp')}
                 className="py-2.5 px-3 rounded-2xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-bold text-xs flex items-center justify-center gap-2 transition shadow-2xs cursor-pointer"
-                title="Kirim ke WhatsApp (Langsung lampirkan foto di HP)"
+                title={shareBlob?.type === 'image/gif' ? 'Kirim ke WhatsApp (Otomatis simpan GIF)' : 'Kirim ke WhatsApp (Langsung lampirkan foto di HP)'}
               >
                 <MessageCircle className="w-4 h-4 fill-current" />
                 <span>WhatsApp</span>
@@ -2562,22 +2629,36 @@ export default function Photobooth() {
             <button
               onClick={() => handleShareToPlatform('native')}
               className="w-full py-2.5 px-3 rounded-2xl bg-zinc-900 hover:bg-black dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-sm"
-              title="Kirim file langsung ke Instagram Stories, TikTok, WA, dll."
+              title={shareBlob?.type === 'image/gif' ? 'Kirim file GIF via menu bawaan HP' : 'Kirim file langsung ke Instagram Stories, TikTok, WA, dll.'}
             >
               <Share2 className="w-4 h-4" />
-              <span>Kirim File via Menu Bawaan HP</span>
+              <span>{shareBlob?.type === 'image/gif' ? 'Kirim GIF via Menu Bawaan HP' : 'Kirim File via Menu Bawaan HP'}</span>
             </button>
 
             {/* Download Button in Modal */}
             <button
               onClick={() => {
                 setShowShareModal(false);
-                handleDownload();
+                if (shareBlob?.type === 'image/gif') {
+                  const url = URL.createObjectURL(shareBlob);
+                  const link = document.createElement('a');
+                  const now = new Date();
+                  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+                  link.download = `pocketbooth-${selectedTemplate}-${dateStr}.gif`;
+                  link.href = url;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  setTimeout(() => URL.revokeObjectURL(url), 3000);
+                  showToast('GIF berhasil diunduh! 🎞️✨');
+                } else {
+                  handleDownload();
+                }
               }}
               className="w-full py-1.5 px-3 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-semibold transition flex items-center justify-center gap-1 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Unduh File PNG Biasa</span>
+              <span>{shareBlob?.type === 'image/gif' ? 'Download File Animasi GIF' : 'Unduh File PNG Biasa'}</span>
             </button>
           </div>
         </div>
